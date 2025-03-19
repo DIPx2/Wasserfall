@@ -72,4 +72,7 @@
                  AND Table_Name = 'bloats_tmp') THEN
         EXECUTE 'DROP TABLE bloats_tmp';
     END IF;
+
+Изменено расположение кавычек "доллар".
+	
 --------------------------------------------------------------

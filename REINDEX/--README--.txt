@@ -50,3 +50,26 @@
 8 = ВыравнивающееСмещениеX64битныхСистем
 
 --------------------------------------------------------------
+Версия 0.00.001
+
+При выполнении reindexing_stream():
+    [23502] ERROR: null value in column "det_perc_bloat_after" of relation "Log_Bloat_Index_Details" violates not-null constraint
+    Подробности: Failing row contains (162, 577, 0, 40, null, rooms_group_id_index).
+    Где: SQL statement "UPDATE Public."Log_Bloat_Index_Details"
+    SET Det_Perc_Bloat_After = updated_bloat_ratio
+    WHERE Pk_Id_Det = Log_Str_Ident"
+Добавлена проверка:
+    IF updated_bloat_ratio IS NULL THEN
+        updated_bloat_ratio = -999;
+    END IF;
+
+При выполнении задания /home/RegulatoryTasks/run_reindex.sh:
+    NOTICE:  table "bloats_tmp" does not exist, skipping
+Добавлена проверка:
+    IF EXISTS (SELECT 1
+               FROM Information_Schema.Tables
+               WHERE Table_Schema = 'public'
+                 AND Table_Name = 'bloats_tmp') THEN
+        EXECUTE 'DROP TABLE bloats_tmp';
+    END IF;
+--------------------------------------------------------------

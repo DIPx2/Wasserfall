@@ -6,27 +6,40 @@ $BODY$
     BEGIN
         <<FLOW>>
             DECLARE
-            x_user     TEXT DEFAULT 'Wszczęsimierz_Szczęśnowszczyk'; -- Вшцежимеж Щежновшчек
-            x_password TEXT DEFAULT 'qwerty';
+            x_user     TEXT DEFAULT 'robo_sudo';
+            x_password TEXT DEFAULT '%dFgH8!zX4&kLmT2';
             server     JSON;
             database   JSON;
 
--- fn_drop TEXT = 'DROP FUNCTION IF EXISTS public.get_bloated_indexes();';
-
-            fn TEXT = '
-                CREATE OR REPLACE FUNCTION public.get_bloated_indexes(
+            fn TEXT = $fn$
+                CREATE OR REPLACE FUNCTION public.get_bloated_indexes()
+                    RETURNS TABLE(
+                        is_na_ text,
+                        index_name_ text,
+                        schema_name_ text,
+                        table_name_ text,
+                        index_table_name_ text,
+                        real_size_bytes_ numeric,
+                        size_ text,
+                        extra_ratio_percent_ double precision,
+                        extra_size_bytes_ numeric,
+                        bloat_size_bytes_ double precision,
+                        bloat_ratio_percent_ double precision,
+                        bloat_ratio_actor_ numeric,
+                        live_data_size_bytes_ numeric,
+                        fillfactor_ integer,
+                        overrided_settings_ boolean,
+                        table_size_bytes_ bigint
                     )
-                    RETURNS TABLE(is_na_ text, index_name_ text, schema_name_ text, table_name_ text, index_table_name_ text, real_size_bytes_ numeric, size_ text, extra_ratio_percent_ double precision, extra_size_bytes_ numeric, bloat_size_bytes_ double precision, bloat_ratio_percent_ double precision, bloat_ratio_actor_ numeric, live_data_size_bytes_ numeric, fillfactor_ integer, overrided_settings_ boolean, table_size_bytes_ bigint)
-                    LANGUAGE ''plpgsql''
+                    LANGUAGE 'plpgsql'
                     COST 100
                     VOLATILE PARALLEL UNSAFE
                     ROWS 1000
-
-                AS $BODY$ -- VERSION 0-00-000
+                AS $fn_body$
                 BEGIN
                 RETURN QUERY
-
                 WITH data AS (
+                    -- Your existing CTE logic here
                     WITH overrided_tables AS (
                         SELECT
                             pc.oid AS table_id,
@@ -35,7 +48,7 @@ $BODY$
                             pc.reloptions AS options
                         FROM pg_class pc
                         JOIN pg_namespace pn ON pn.oid = pc.relnamespace
-                        WHERE reloptions::text ~ ''autovacuum''
+                        WHERE reloptions::text ~ 'autovacuum'
                     ),
                     step0 AS (
                         SELECT
@@ -48,18 +61,18 @@ $BODY$
                             idx.relam,
                             indrelid,
                             indexrelid,
-                            regexp_split_to_table(indkey::text, '' '')::smallint AS attnum,
-                            COALESCE(SUBSTRING(array_to_string(idx.reloptions, '' '') FROM ''fillfactor=([0-9]+)'')::smallint, 90) AS fillfactor,
+                            regexp_split_to_table(indkey::text, ' ')::smallint AS attnum,
+                            COALESCE(SUBSTRING(array_to_string(idx.reloptions, ' ') FROM 'fillfactor=([0-9]+)')::smallint, 90) AS fillfactor,
                             pg_total_relation_size(tbl.oid) - pg_indexes_size(tbl.oid) - COALESCE(pg_total_relation_size(tbl.reltoastrelid), 0) AS table_size_bytes
                         FROM pg_index
                         JOIN pg_class idx ON idx.oid = pg_index.indexrelid
                         JOIN pg_class tbl ON tbl.oid = pg_index.indrelid
                         JOIN pg_namespace ON pg_namespace.oid = idx.relnamespace
                         JOIN pg_am a ON idx.relam = a.oid
-                        WHERE a.amname = ''btree''
+                        WHERE a.amname = 'btree'
                             AND pg_index.indisvalid
-                            AND tbl.relkind = ''r''
-                            AND pg_namespace.nspname <> ''information_schema'' AND pg_namespace.nspname <> ''pg_catalog''
+                            AND tbl.relkind = 'r'
+                            AND pg_namespace.nspname <> 'information_schema' AND pg_namespace.nspname <> 'pg_catalog'
                             AND indisprimary = FALSE
                     ),
                     step1 AS (
@@ -72,14 +85,14 @@ $BODY$
                             i.relpages,
                             i.relam,
                             a.attrelid AS table_oid,
-                            current_setting(''block_size'')::numeric AS bs,
+                            current_setting('block_size')::numeric AS bs,
                             fillfactor,
-                            CASE WHEN version() ~ ''mingw32|64-bit|x86_64|ppc64|ia64|amd64'' THEN 8 ELSE 4 END AS maxalign,
+                            CASE WHEN version() ~ 'mingw32|64-bit|x86_64|ppc64|ia64|amd64' THEN 8 ELSE 4 END AS maxalign,
                             24 AS pagehdr,
                             16 AS pageopqdata,
                             CASE WHEN MAX(COALESCE(s.null_frac, 0)) = 0 THEN 2 ELSE 2 + ((32 + 8 - 1) / 8) END AS index_tuple_hdr_bm,
                             SUM((1 - COALESCE(s.null_frac, 0)) * COALESCE(s.avg_width, 1024)) AS nulldatawidth,
-                            MAX(CASE WHEN a.atttypid = ''pg_catalog.name''::regtype THEN 1 ELSE 0 END) > 0 AS is_na,
+                            MAX(CASE WHEN a.atttypid = 'pg_catalog.name'::regtype THEN 1 ELSE 0 END) > 0 AS is_na,
                             i.table_size_bytes
                         FROM pg_attribute AS a
                         JOIN step0 AS i ON a.attrelid = i.indexrelid
@@ -109,7 +122,7 @@ $BODY$
                             COALESCE(1 + CEIL(reltuples / FLOOR((bs - pageopqdata - pagehdr) * fillfactor / (100 * (4 + nulldatahdrwidth)::float))), 0) AS est_pages_ff
                         FROM step2
                         JOIN pg_am am ON step2.relam = am.oid
-                        WHERE am.amname = ''btree''
+                        WHERE am.amname = 'btree'
                     ),
                     step4 AS (
                         SELECT
@@ -125,14 +138,14 @@ $BODY$
                         FROM step3
                     )
                     SELECT
-                        CASE is_na WHEN TRUE THEN ''TRUE'' ELSE '''' END AS is_na,
+                        CASE is_na WHEN TRUE THEN 'TRUE' ELSE '' END AS is_na,
                         index_name,
-                        COALESCE(step4.schema_name, ''public'') AS schema_name,
-                        COALESCE(NULLIF(step4.schema_name, ''public'') || ''.'', '''') || step4.table_name AS table_name,
+                        COALESCE(step4.schema_name, 'public') AS schema_name,
+                        COALESCE(NULLIF(step4.schema_name, 'public') || '.', '') || step4.table_name AS table_name,
                         LEFT(index_name, 50) || CASE
-                            WHEN LENGTH(index_name) > 50 THEN ''…''
-                            ELSE ''''
-                        END || ''('' || COALESCE(NULLIF(step4.schema_name, ''public'') || ''.'', '''') || step4.table_name || '')'' AS index_table_name,
+                            WHEN LENGTH(index_name) > 50 THEN '…'
+                            ELSE ''
+                        END || '(' || COALESCE(NULLIF(step4.schema_name, 'public') || '.', '') || step4.table_name || ')' AS index_table_name,
                         real_size AS real_size_bytes,
                         pg_size_pretty(real_size::numeric) AS size,
                         extra_ratio AS extra_ratio_percent,
@@ -148,30 +161,27 @@ $BODY$
                     LEFT JOIN overrided_tables ot ON ot.table_id = step4.tblid
                     ORDER BY bloat_size DESC NULLS LAST
                 )
-
                 SELECT
-                is_na::TEXT AS is_na_f,
-                index_name::TEXT AS index_name_f,
-                schema_name::TEXT AS schema_name_f,
-                table_name::TEXT AS table_name_f,
-                index_table_name::TEXT AS index_table_name_f,
-                real_size_bytes AS real_size_bytes_f,
-                size AS size_f,
-                extra_ratio_percent AS extra_ratio_percent_f,
-                extra_size_bytes AS extra_size_bytes_f,
-                bloat_size_bytes AS bloat_size_bytes_f,
-                bloat_ratio_percent AS bloat_ratio_percent_f,
-                bloat_ratio_factor AS bloat_ratio_factor_f,
-                live_data_size_bytes AS live_data_size_bytes_f,
-                fillfactor AS fillfactor_f,
-                overrided_settings AS overrided_settings_f,
-                table_size_bytes AS table_size_bytes_f
+                    is_na::TEXT AS is_na_f,
+                    index_name::TEXT AS index_name_f,
+                    schema_name::TEXT AS schema_name_f,
+                    table_name::TEXT AS table_name_f,
+                    index_table_name::TEXT AS index_table_name_f,
+                    real_size_bytes AS real_size_bytes_f,
+                    size AS size_f,
+                    extra_ratio_percent AS extra_ratio_percent_f,
+                    extra_size_bytes AS extra_size_bytes_f,
+                    bloat_size_bytes AS bloat_size_bytes_f,
+                    bloat_ratio_percent AS bloat_ratio_percent_f,
+                    bloat_ratio_factor AS bloat_ratio_factor_f,
+                    live_data_size_bytes AS live_data_size_bytes_f,
+                    fillfactor AS fillfactor_f,
+                    overrided_settings AS overrided_settings_f,
+                    table_size_bytes AS table_size_bytes_f
                 FROM data;
-
                 END;
-                $BODY$;
-                ';
-
+                $fn_body$;
+            $fn$;
 
         BEGIN
             FOR server IN SELECT JSON_BUILD_OBJECT('Id_Conn', Pk_Id_Conn, 'port', Conn_Port, 'host', Conn_Host) AS server FROM "Bloat_Index_Db_Connections"
@@ -182,6 +192,7 @@ $BODY$
                                 PERFORM DBLINK_DISCONNECT(conn_name);
                             END IF;
                             PERFORM DBLINK_CONNECT(conn_name, FORMAT('dbname=%s user=%s password=%s host=%s port=%s', database ->> 'Name', x_user, x_password, server ->> 'host', server ->> 'port') );
+                            PERFORM DBLINK_EXEC(conn_name, 'DROP FUNCTION get_bloated_indexes()');
                             PERFORM DBLINK_EXEC(conn_name, fn);
                         END LOOP;
                     PERFORM DBLINK_DISCONNECT(conn_name);

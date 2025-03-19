@@ -7,7 +7,7 @@ $BODY$
         <<FLOW>>
             DECLARE
             x_user     TEXT DEFAULT 'Wszczęsimierz_Szczęśnowszczyk'; -- Вшцежимеж Щежновшчек
-            x_password TEXT DEFAULT '123'; -- Особая комбинация не вскрываемого пароля с солью
+            x_password TEXT DEFAULT 'qwerty';
             server     JSON;
             database   JSON;
         BEGIN

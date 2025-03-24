@@ -10,8 +10,9 @@ $BODY$
         <<FLOW>>
             DECLARE
 
-        x_user     TEXT DEFAULT 'Wszczęsimierz_Szczęśnowszczyk';
+        x_user     TEXT DEFAULT 'robo_sudo';
         x_password TEXT DEFAULT 'qwerty';
+
 
             server     JSON;
             database   JSON;

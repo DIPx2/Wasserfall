@@ -13,8 +13,10 @@ DECLARE
 BEGIN
     <<FLOW>>
         DECLARE
-            x_user     TEXT DEFAULT 'Wszczęsimierz_Szczęśnowszczyk';
-            x_password TEXT DEFAULT 'qwerty';
+            x_user     TEXT DEFAULT 'robo_sudo';
+            x_password TEXT DEFAULT '%dFgH8!zX4&kLmT2';
+            --x_user     TEXT DEFAULT 'Wszczęsimierz_Szczęśnowszczyk';
+            --x_password TEXT DEFAULT 'qwerty';
             server     JSON; -- Переменная для хранения информации о серверах
             database   JSON; -- Переменная для хранения информации о базах данных
     BEGIN
@@ -165,7 +167,7 @@ BEGIN
 
                                         -- NULL может приходить из функции
                                         IF updated_bloat_ratio IS NULL THEN
-                                            updated_bloat_ratio = -999;
+                                            updated_bloat_ratio = -0,0;
                                         END IF;
 
                                         -- Обновить запись в логе с новым процентом "раздутости"

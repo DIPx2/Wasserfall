@@ -1,13 +1,10 @@
-
 -- To use the the database robohub and the scheme reindex
 
-CREATE OR REPLACE PROCEDURE Robohub.Reindex."reindexing_stream"(IN bloat_satio_search DOUBLE PRECISION DEFAULT 25) -- Входной параметр: пороговое значение в % для поиска "раздутых" индексов
+CREATE OR REPLACE PROCEDURE Robohub.Reindex."reindexing_stream"(IN bloat_ratio_search DOUBLE PRECISION DEFAULT 24.99) -- Входной параметр: пороговое значение в % для поиска "раздутых" индексов
     LANGUAGE 'plpgsql'
 AS
-$BODY$ -- VERSION 1-00-000
+$BODY$ -- VERSION 1-00-001
 DECLARE
-
-    bloat_ratio_search    DOUBLE PRECISION DEFAULT 24.99;
     conn_name             TEXT DEFAULT 'x_connect'; -- Имя соединения для DBLINK
     Record_Number_Details INTEGER; -- Переменная для хранения id операции
     err_mess              TEXT; -- Переменная для хранения текста ошибки
@@ -16,12 +13,10 @@ DECLARE
 BEGIN
     <<FLOW>>
         DECLARE
-
-        x_user     TEXT DEFAULT 'Wszczęsimierz_Szczęśnowszczyk';
-        x_password TEXT DEFAULT 'qwerty';
-
-        server     JSON; -- Переменная для хранения информации о серверах
-        database   JSON; -- Переменная для хранения информации о базах данных
+            x_user     TEXT DEFAULT 'Wszczęsimierz_Szczęśnowszczyk';
+            x_password TEXT DEFAULT 'qwerty';
+            server     JSON; -- Переменная для хранения информации о серверах
+            database   JSON; -- Переменная для хранения информации о базах данных
     BEGIN
         -- Цикл по всем серверам из таблицы "Servers"
         FOR server IN SELECT JSON_BUILD_OBJECT('Id_Conn', Pk_Id_Conn, 'port', Conn_Port, 'host',
@@ -134,7 +129,9 @@ BEGIN
 
                                         BEGIN
                                             -- Выполнить реиндексацию индекса
-                                            PERFORM DBLINK_EXEC(conn_name, 'REINDEX INDEX CONCURRENTLY ' || j_temp_index_name || ';');
+                                            PERFORM DBLINK_EXEC(conn_name,
+                                                                'REINDEX INDEX CONCURRENTLY ' || j_temp_index_name ||
+                                                                ';');
                                         EXCEPTION
                                             -- Обработка ошибок при реиндексации
                                             WHEN OTHERS THEN

@@ -10,14 +10,14 @@ $BODY$
         <<FLOW>>
             DECLARE
 
-        x_user     TEXT DEFAULT 'Wszczęsimierz_Szczęśnowszczyk';
-        x_password TEXT DEFAULT 'qwerty';
+        x_user     TEXT DEFAULT 'robo_sudo';
+        x_password TEXT DEFAULT '%dFgH8!zX4&kLmT2'; --''Wszczęsimierz_Szczęśnowszczyk';
 
             server     JSON;
             database   JSON;
 
             fn TEXT = $fn$
-                CREATE OR REPLACE FUNCTION public.get_bloated_indexes()
+                CREATE OR REPLACE FUNCTION get_bloated_indexes()
                     RETURNS TABLE(
                         is_na_ text,
                         index_name_ text,
@@ -193,14 +193,14 @@ $BODY$
                 LOOP
                     FOR database IN SELECT JSON_BUILD_OBJECT('Id_Db', Pk_Id_Db, 'Id_Conn', Fk_Pk_Id_Conn, 'Scheme', Db_Scheme, 'Name', Db_Name) AS database FROM "DataBases" WHERE Fk_Pk_Id_Conn = (server ->> 'Id_Conn')::INTEGER AND "DataBases".Toggle_Switch IS TRUE
                         LOOP
-                            IF conn_name IN (SELECT UNNEST(DBLINK_GET_CONNECTIONS())) THEN
-                                PERFORM DBLINK_DISCONNECT(conn_name);
+                            IF conn_name IN (SELECT UNNEST(robohub.public.DBLINK_GET_CONNECTIONS())) THEN
+                                PERFORM robohub.public.DBLINK_DISCONNECT(conn_name);
                             END IF;
-                                PERFORM DBLINK_CONNECT(conn_name, FORMAT('dbname=%s user=%s password=%s host=%s port=%s', database ->> 'Name', x_user, x_password, server ->> 'host', server ->> 'port') );
-                                PERFORM DBLINK_EXEC(conn_name, 'DROP FUNCTION IF EXISTS get_bloated_indexes()');
-                                PERFORM DBLINK_EXEC(conn_name, fn);
+                                PERFORM robohub.public.DBLINK_CONNECT(conn_name, FORMAT('dbname=%s user=%s password=%s host=%s port=%s', database ->> 'Name', x_user, x_password, server ->> 'host', server ->> 'port') );
+                                PERFORM robohub.public.DBLINK_EXEC(conn_name, 'DROP FUNCTION IF EXISTS get_bloated_indexes()');
+                                PERFORM robohub.public.DBLINK_EXEC(conn_name, fn);
                         END LOOP;
-                    PERFORM DBLINK_DISCONNECT(conn_name);
+                    PERFORM robohub.public.DBLINK_DISCONNECT(conn_name);
                 END LOOP;
         END FLOW;
     END;

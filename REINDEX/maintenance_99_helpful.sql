@@ -32,15 +32,16 @@ SELECT * FROM temp_table;
 DO
 $$
 DECLARE
-    Tuple_Number INTEGER = 4;
+    Tuple_Number INTEGER = 5;
 BEGIN
 
--- UPDATE reindex."Servers" SET toggle_switch = TRUE WHERE Pk_Id_Conn = Tuple_Number;
--- UPDATE reindex."DataBases" SET toggle_switch = TRUE WHERE Fk_Pk_Id_Conn = Tuple_Number;
+--UPDATE reindex."Servers" SET toggle_switch = TRUE WHERE Pk_Id_Conn = Tuple_Number;
+--UPDATE reindex."DataBases" SET toggle_switch = TRUE WHERE Fk_Pk_Id_Conn = Tuple_Number;
 
--- UPDATE reindex."Servers" SET toggle_switch = FALSE WHERE Pk_Id_Conn = Tuple_Number;
--- UPDATE reindex."DataBases" SET toggle_switch = FALSE WHERE Fk_Pk_Id_Conn = Tuple_Number;
+--UPDATE reindex."Servers" SET toggle_switch = FALSE WHERE Pk_Id_Conn = Tuple_Number;
+--UPDATE reindex."DataBases" SET toggle_switch = FALSE WHERE Fk_Pk_Id_Conn = Tuple_Number;
 
 END;
 $$;
 -------------------------------------------------------------------------------------------------------------------
+

@@ -1,3 +1,17 @@
+DO $$
+    DECLARE
+        имя_файла TEXT;
+    BEGIN
+        -- сформировать иия для файла
+        SELECT * FROM robohub.reindex."Servers";
+        
+    END;
+$$
+
+
+
+
+/*
 DO
 $$
 BEGIN
@@ -38,3 +52,4 @@ BEGIN
 
 END;
 $$ LANGUAGE plpgsql;
+*/

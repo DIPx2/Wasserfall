@@ -23,13 +23,13 @@ BEGIN
         -- Цикл по всем серверам из таблицы "Servers"
         FOR server IN SELECT JSON_BUILD_OBJECT('Id_Conn', Pk_Id_Conn, 'port', Conn_Port, 'host',
                                                Conn_Host) AS server
-                      FROM "robohub".Reindex."Servers"
+                      FROM robohub.reference."Servers"
             LOOP
                 -- Цикл по всем базам данных, связанным с текущим сервером
                 FOR database IN SELECT JSON_BUILD_OBJECT('Id_Db', Pk_Id_Db, 'Id_Conn', Fk_Pk_Id_Conn::TEXT,
                                                          'Scheme',
                                                          Db_Scheme, 'Name', Db_Name) AS database
-                                FROM Robohub.Reindex."DataBases"
+                                FROM Robohub.reference."DataBases"
                                 WHERE Fk_Pk_Id_Conn = (server ->> 'Id_Conn')::INTEGER
                     LOOP
                         -- Вставка записи для логирования операции
@@ -107,8 +107,6 @@ BEGIN
                             sql_query_0 := FORMAT(
                                     'SELECT bloat_ratio_percent_, schema_name_, table_name_, index_name_ FROM Get_Bloated_Indexes() WHERE bloat_ratio_percent_ > %s',
                                     bloat_ratio_search);
-
-RAISE INFO '% %', server->>'host', database->>'name';
 
                             -- Вставить данные о "раздутых" индексах во временную таблицу
                             INSERT INTO Bloats_Tmp (temp_bloat_ratio_percent, temp_schema_name, temp_table_name,

@@ -3,7 +3,7 @@
 CREATE OR REPLACE PROCEDURE Robohub.Reindex."reindexing_stream"(IN bloat_ratio_search DOUBLE PRECISION DEFAULT 24.99) -- Входной параметр: пороговое значение в % для поиска "раздутых" индексов
     LANGUAGE 'plpgsql'
 AS
-$BODY$ -- VERSION 1-00-001
+$BODY$ -- VERSION 1-00-002
 DECLARE
     conn_name             TEXT DEFAULT 'x_connect'; -- Имя соединения для robohub.public.DBLINK
     Record_Number_Details INTEGER; -- Переменная для хранения id операции
@@ -23,14 +23,17 @@ BEGIN
         -- Цикл по всем серверам из таблицы "Servers"
         FOR server IN SELECT JSON_BUILD_OBJECT('Id_Conn', Pk_Id_Conn, 'port', Conn_Port, 'host',
                                                Conn_Host) AS server
-                      FROM robohub.reference."Servers"
+                      FROM Robohub.Reference."Servers"
+                      WHERE (switch_serv & B'10000000') = B'10000000'
+
             LOOP
                 -- Цикл по всем базам данных, связанным с текущим сервером
                 FOR database IN SELECT JSON_BUILD_OBJECT('Id_Db', Pk_Id_Db, 'Id_Conn', Fk_Pk_Id_Conn::TEXT,
                                                          'Scheme',
                                                          Db_Scheme, 'Name', Db_Name) AS database
-                                FROM Robohub.reference."DataBases"
+                                FROM Robohub.Reference."DataBases"
                                 WHERE Fk_Pk_Id_Conn = (server ->> 'Id_Conn')::INTEGER
+                                  AND (switch_db & B'10000000') = B'10000000'
                     LOOP
                         -- Вставка записи для логирования операции
                         INSERT INTO Robohub.Reindex."Details" (Pk_Id_Det,
@@ -53,23 +56,25 @@ BEGIN
 
                         BEGIN
                             -- Проверка, существует ли уже соединение с именем conn_name
-                            IF conn_name IN (SELECT UNNEST(robohub.public.DBLINK_GET_CONNECTIONS())) THEN
+                            IF conn_name IN (SELECT UNNEST(Robohub.Public.Dblink_Get_Connections())) THEN
                                 -- Если соединение существует, отключить его
-                                PERFORM robohub.public.DBLINK_DISCONNECT(conn_name);
+                                PERFORM Robohub.Public.Dblink_Disconnect(conn_name);
                             END IF;
 
                             -- Установить соединение с базой данных
-                            PERFORM robohub.public.DBLINK_CONNECT(conn_name,
-                                                   FORMAT('dbname=%s user=%s password=%s host=%s port=%s',
-                                                          database ->> 'Name', x_user, x_password,
-                                                          server ->> 'host', server ->> 'port'));
+                            PERFORM Robohub.Public.Dblink_Connect(conn_name,
+                                                                  FORMAT(
+                                                                          'dbname=%s user=%s password=%s host=%s port=%s',
+                                                                          database ->> 'Name', x_user, x_password,
+                                                                          server ->> 'host', server ->> 'port'));
                         EXCEPTION
                             -- Обработка ошибок при подключении
                             WHEN OTHERS THEN
                                 GET STACKED DIAGNOSTICS err_mess = MESSAGE_TEXT, err_det = PG_EXCEPTION_DETAIL, err_cd = RETURNED_SQLSTATE;
                                 INSERT INTO Robohub.Reindex."Errors" (Pk_Id_Err, Fk_Pk_Id_Db_K, Err_Label, Err_Message,
                                                                       Err_Detail, Err_Code)
-                                VALUES (DEFAULT, Record_Number_Details, 'robohub.public.DBLINK_CONNECT', err_mess, err_det, err_cd);
+                                VALUES (DEFAULT, Record_Number_Details, 'robohub.public.DBLINK_CONNECT', err_mess,
+                                        err_det, err_cd);
                                 RETURN;
                         END;
 
@@ -104,7 +109,7 @@ BEGIN
                             );
 
                             -- Формировать SQL-запрос для поиска "раздутых" индексов
-                            sql_query_0 := FORMAT(
+                            sql_query_0 = FORMAT(
                                     'SELECT bloat_ratio_percent_, schema_name_, table_name_, index_name_ FROM Get_Bloated_Indexes() WHERE bloat_ratio_percent_ > %s',
                                     bloat_ratio_search);
 
@@ -112,7 +117,7 @@ BEGIN
                             INSERT INTO Bloats_Tmp (temp_bloat_ratio_percent, temp_schema_name, temp_table_name,
                                                     temp_index_name)
                             SELECT j1, j2, j3, j4
-                            FROM robohub.public.DBLINK(conn_name, sql_query_0) AS result(j1 DOUBLE PRECISION, j2 TEXT, j3 TEXT, j4 TEXT);
+                            FROM Robohub.Public.Dblink(conn_name, sql_query_0) AS result(j1 DOUBLE PRECISION, j2 TEXT, j3 TEXT, j4 TEXT);
 
                             -- Проверить, есть ли "раздутые" индексы
                             IF (SELECT COUNT(temp_id) FROM Bloats_Tmp) != 0 THEN
@@ -131,11 +136,13 @@ BEGIN
 
                                         BEGIN
                                             -- Выполнить реиндексацию индекса
-                                            PERFORM robohub.public.DBLINK_EXEC(conn_name, 'REINDEX INDEX CONCURRENTLY ' || j_temp_index_name || ';');
+                                            PERFORM Robohub.Public.Dblink_Exec(conn_name,
+                                                                               'REINDEX INDEX CONCURRENTLY ' ||
+                                                                               j_temp_index_name || ';');
                                         EXCEPTION
                                             -- Обработка ошибок при реиндексации
                                             WHEN OTHERS THEN
-                                                PERFORM robohub.public.DBLINK_DISCONNECT(conn_name);
+                                                PERFORM Robohub.Public.Dblink_Disconnect(conn_name);
                                                 GET STACKED DIAGNOSTICS err_mess = MESSAGE_TEXT, err_det = PG_EXCEPTION_DETAIL, err_cd = RETURNED_SQLSTATE;
                                                 INSERT INTO Robohub.Reindex."Errors" (Pk_Id_Err, Fk_Pk_Id_Db_K,
                                                                                       Err_Label, Err_Message,
@@ -154,14 +161,14 @@ BEGIN
                                         WHERE Pk_Id_Det = Record_Number_Details;
 
                                         -- Формировать SQL-запрос для получения обновленного процента "раздутости"
-                                        sql_query_1 := FORMAT(
+                                        sql_query_1 = FORMAT(
                                                 'SELECT bloat_ratio_percent_ FROM Get_Bloated_Indexes() WHERE schema_name_ = %L AND table_name_ = %L AND index_name_ = %L',
                                                 j_temp_schema_name, j_temp_table_name, j_temp_index_name);
 
                                         -- Получить обновленный процент "раздутости"
                                         SELECT i1
                                         INTO updated_bloat_ratio
-                                        FROM robohub.public.DBLINK(conn_name, sql_query_1) AS result(i1 DOUBLE PRECISION);
+                                        FROM Robohub.Public.Dblink(conn_name, sql_query_1) AS result(i1 DOUBLE PRECISION);
 
                                         -- NULL может приходить из функции
                                         IF updated_bloat_ratio IS NULL THEN updated_bloat_ratio = -333; END IF;
@@ -176,7 +183,7 @@ BEGIN
                             DROP TABLE IF EXISTS Bloats_Tmp; -- Удалить временную таблицу
                         END PROCESSING;
                     END LOOP; -- Конец цикла по всем базам данных
-                PERFORM robohub.public.DBLINK_DISCONNECT(conn_name); -- Отключить соединение с базой данных
+                PERFORM Robohub.Public.Dblink_Disconnect(conn_name); -- Отключить соединение с базой данных
             END LOOP; -- Конец цикла по всем серверам
     END FLOW;
 END;

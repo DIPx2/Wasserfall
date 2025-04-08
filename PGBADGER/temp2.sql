@@ -36,7 +36,7 @@ $$
 
     BEGIN
         FOR n_Pk_Id_Conn, n_Conn_Host, n_Conn_Port IN SELECT Pk_Id_Conn, Conn_Host, Conn_Port
-                                                      FROM Robohub.Reference."Servers"
+                                                      FROM Robohub.robo_reference."Servers"
                                                       WHERE (Switch_Serv & B'00100000') = B'00100000'
             LOOP
 
@@ -53,7 +53,7 @@ $$
                 EXCEPTION
                     WHEN OTHERS THEN
                         GET STACKED DIAGNOSTICS Err_Mess = MESSAGE_TEXT, Err_Det = PG_EXCEPTION_DETAIL, Err_Cd = RETURNED_SQLSTATE;
-                        INSERT INTO Robohub.Pgbadger_Repo_Slicer."Errors" (Pk_Id_Slice_Err,
+                        INSERT INTO Robohub.robo_slicer."Errors" (Pk_Id_Slice_Err,
                                                                            Fk_Pk_Id_Conn,
                                                                            Slice_Err_Code,
                                                                            Slice_Err_Detail,
@@ -75,7 +75,7 @@ $$
 
                 IF v_name IS NULL THEN
                     RAISE NOTICE 'No data found.';
-                    INSERT INTO Robohub.Pgbadger_Repo_Slicer."Errors" (Pk_Id_Slice_Err,
+                    INSERT INTO Robohub.robo_slicer."Errors" (Pk_Id_Slice_Err,
                                                                        Fk_Pk_Id_Conn,
                                                                        Slice_Err_Code,
                                                                        Slice_Err_Detail,

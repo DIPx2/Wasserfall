@@ -179,7 +179,7 @@ $$
                log_synthesized_name,
                start_time AT TIME ZONE 'UTC',
                end_time AT TIME ZONE 'UTC'
-        FROM Robohub.Reference."Servers" s
+        FROM Robohub.robo_reference."Servers" s
                  JOIN Pg_Ini pi ON pi.Fk_Pk_Id_Conn = s.Pk_Id_Conn
         WHERE (s.Switch_Serv & B'00100000') = B'00100000';
 
@@ -232,7 +232,7 @@ $$
                         err_det = PG_EXCEPTION_DETAIL,
                         err_cd = RETURNED_SQLSTATE;
 
-                    INSERT INTO Robohub.Pgbadger_Repo_Slicer."Errors" (Fk_Pk_Id_Conn, Slice_Err_Code,
+                    INSERT INTO Robohub.robo_slicer."Errors" (Fk_Pk_Id_Conn, Slice_Err_Code,
                                                                        Slice_Err_Detail, Slice_Err_Mess,
                                                                        Slice_Now_Ins)
                     VALUES (omega.serv_id, err_cd, err_det, err_mess, NOW());

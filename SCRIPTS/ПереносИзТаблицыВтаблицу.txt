@@ -1,0 +1,31 @@
+COPY user_online TO '/home/reports/user_online.csv' WITH CSV HEADER;
+COPY user_groups TO '/home/reports/user_groups.csv' WITH CSV HEADER;
+COPY users TO '/home/reports/users.csv' WITH CSV HEADER;
+COPY projects TO '/home/reports/projects.csv' WITH CSV HEADER;
+COPY user_notifications_settings TO '/home/reports/user_notifications_settings.csv' WITH CSV HEADER;
+COPY user_project TO '/home/reports/user_project.csv' WITH CSV HEADER;
+COPY migrations TO '/home/reports/migrations.csv' WITH CSV HEADER;
+
+
+COPY user_online FROM '/home/reports/user_online.csv' WITH CSV HEADER;
+COPY user_groups FROM '/home/reports/user_groups.csv' WITH CSV HEADER;
+COPY users FROM '/home/reports/users.csv' WITH CSV HEADER;
+COPY projects FROM '/home/reports/projects.csv' WITH CSV HEADER;
+COPY user_notifications_settings FROM '/home/reports/user_notifications_settings.csv' WITH CSV HEADER;
+COPY user_project FROM '/home/reports/user_project.csv' WITH CSV HEADER;
+COPY migrations FROM '/home/reports/migrations.csv' WITH CSV HEADER;
+
+
+SELECT 'user_online' AS table_name, COUNT(*) AS row_count FROM user_online
+UNION ALL
+SELECT 'user_groups' AS table_name, COUNT(*) AS row_count FROM user_groups
+UNION ALL
+SELECT 'users' AS table_name, COUNT(*) AS row_count FROM users
+UNION ALL
+SELECT 'projects' AS table_name, COUNT(*) AS row_count FROM projects
+UNION ALL
+SELECT 'user_notifications_settings' AS table_name, COUNT(*) AS row_count FROM user_notifications_settings
+UNION ALL
+SELECT 'user_project' AS table_name, COUNT(*) AS row_count FROM user_project
+UNION ALL
+SELECT 'migrations' AS table_name, COUNT(*) AS row_count FROM migrations;

@@ -1,0 +1,93 @@
+DO $$
+DECLARE
+    db_old constant text := 'volna_mbss_stage';
+    db_new constant text := 'volna_mbss_stage_neo';
+    port constant int := 15434;
+    owner constant text := 'mbss_stage';
+    pg_bin constant text := '/usr/pgsql-16/bin';
+    table_name text;
+    dump_text text;
+    roles_cmd text;
+BEGIN
+    -- 1. Создание новой базы данных
+    RAISE NOTICE 'Создание новой базы данных %', db_new;
+    EXECUTE format('CREATE DATABASE %I OWNER %I', db_new, owner);
+
+    -- Временные таблицы для хранения SQL-дампов
+    CREATE TEMP TABLE temp_roles(sql text);
+    CREATE TEMP TABLE temp_structure(sql text);
+    CREATE TEMP TABLE temp_table_sql(table_name text, sql text);
+
+    -- 2. Экспорт ролей
+    RAISE NOTICE 'Экспорт ролей...';
+    roles_cmd := pg_bin || '/pg_dumpall -p ' || port || ' --roles-only';
+    COPY temp_roles(sql)
+    FROM PROGRAM roles_cmd;
+
+    -- Удаление default privileges от gtimofeyev
+    DELETE FROM temp_roles WHERE sql LIKE 'ALTER DEFAULT PRIVILEGES FOR ROLE gtimofeyev%';
+
+    -- Добавление нужных default privileges от mbss_stage
+    INSERT INTO temp_roles(sql) VALUES
+        format('ALTER DEFAULT PRIVILEGES FOR ROLE %I GRANT SELECT ON TABLES TO mbss_reader;', owner),
+        format('ALTER DEFAULT PRIVILEGES FOR ROLE %I GRANT USAGE ON SEQUENCES TO mbss_reader;', owner),
+        format('ALTER DEFAULT PRIVILEGES FOR ROLE %I GRANT EXECUTE ON FUNCTIONS TO mbss_reader;', owner);
+
+    -- 3. Экспорт структуры базы данных
+    RAISE NOTICE 'Экспорт структуры...';
+    COPY temp_structure(sql)
+    FROM PROGRAM pg_bin || '/pg_dump -p ' || port || ' -U ' || owner || ' -d ' || db_old || ' -s';
+
+    -- 4. Экспорт таблиц
+    FOR table_name IN SELECT unnest(ARRAY['user_online', 'user_groups', 'users', 'projects']) LOOP
+        RAISE NOTICE 'Экспорт таблицы %', table_name;
+        dump_text := pg_bin || '/pg_dump -p ' || port || ' -U ' || owner || ' -d ' || db_old || ' -t ' || quote_ident(table_name);
+        EXECUTE format(
+            'COPY temp_table_sql(sql) FROM PROGRAM %L', dump_text
+        );
+        UPDATE temp_table_sql SET table_name = table_name WHERE table_name IS NULL;
+    END LOOP;
+
+    -- Подключение к новой базе данных
+    RAISE NOTICE 'Подключение к новой базе %', db_new;
+
+    -- 5. Импорт ролей
+    RAISE NOTICE 'Импорт ролей...';
+    FOR dump_text IN SELECT sql FROM temp_roles LOOP
+        EXECUTE dump_text;
+    END LOOP;
+
+    -- 6. Импорт структуры
+    RAISE NOTICE 'Импорт структуры...';
+    FOR dump_text IN SELECT sql FROM temp_structure LOOP
+        EXECUTE format('SET ROLE %I; %s', owner, dump_text);
+    END LOOP;
+
+    -- 7. Импорт таблиц
+    RAISE NOTICE 'Импорт данных таблиц...';
+    FOR table_name, dump_text IN SELECT table_name, sql FROM temp_table_sql LOOP
+        RAISE NOTICE 'Импорт таблицы %', table_name;
+        EXECUTE format('SET ROLE %I; %s', owner, dump_text);
+    END LOOP;
+
+    -- 8. Обновление владельцев объектов
+    RAISE NOTICE 'Обновление владельцев объектов...';
+    FOR dump_text IN
+        SELECT 'ALTER TABLE ' || quote_ident(table_schema) || '.' || quote_ident(table_name) || ' OWNER TO ' || quote_ident(owner) || ';'
+        FROM information_schema.tables
+        WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+    UNION ALL
+        SELECT 'ALTER SEQUENCE ' || quote_ident(sequence_schema) || '.' || quote_ident(sequence_name) || ' OWNER TO ' || quote_ident(owner) || ';'
+        FROM information_schema.sequences
+        WHERE sequence_schema NOT IN ('pg_catalog', 'information_schema')
+    UNION ALL
+        SELECT 'ALTER VIEW ' || quote_ident(table_schema) || '.' || quote_ident(table_name) || ' OWNER TO ' || quote_ident(owner) || ';'
+        FROM information_schema.views
+        WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+    LOOP
+        EXECUTE dump_text;
+    END LOOP;
+
+    RAISE NOTICE '✅ Перенос завершён успешно!';
+END;
+$$ LANGUAGE plpgsql;

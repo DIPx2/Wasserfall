@@ -1,0 +1,8 @@
+
+-- Use the server that needs to be connected to reindexing management
+
+nano /долгий/путь/к/файлу/хба/pg_hba.conf
+host all юрий_гагарин 000.000.000.000/32 scram-sha-256
+/usr/bin/pg_ctl reload -D /долгий/путь/к/файлу/хба/
+
+SELECT pg_reload_conf();

@@ -1,0 +1,12 @@
+
+-- Use the automation server
+
+/home/RegulatoryTasks/run_reindex.sh
+
+#!/bin/bash
+/usr/lib/postgresql/17/bin/psql --port=5437 --dbname="robohub" --command="SET search_path TO reindex;" --command="CALL reindex.reindexing_stream();"
+
+chmod +x /home/RegulatoryTasks/run_reindex.sh
+
+00 05 * * * /home/RegulatoryTasks/run_reindex.sh
+

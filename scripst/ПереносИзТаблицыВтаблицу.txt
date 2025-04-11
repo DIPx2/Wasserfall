@@ -1,41 +1,14 @@
----------------------------------
-COPY user_online TO '/home/reports/user_online.csv' WITH CSV HEADER;
-COPY user_groups TO '/home/reports/user_groups.csv' WITH CSV HEADER;
-COPY users TO '/home/reports/users.csv' WITH CSV HEADER;
-COPY projects TO '/home/reports/projects.csv' WITH CSV HEADER;
-COPY user_notifications_settings TO '/home/reports/user_notifications_settings.csv' WITH CSV HEADER;
-COPY user_project TO '/home/reports/user_project.csv' WITH CSV HEADER;
-COPY migrations TO '/home/reports/migrations.csv' WITH CSV HEADER;
----------------------------------
-COPY user_online FROM '/home/reports/user_online.csv' WITH CSV HEADER;
-COPY user_groups FROM '/home/reports/user_groups.csv' WITH CSV HEADER;
-COPY users FROM '/home/reports/users.csv' WITH CSV HEADER;
-COPY projects FROM '/home/reports/projects.csv' WITH CSV HEADER;
-COPY user_notifications_settings FROM '/home/reports/user_notifications_settings.csv' WITH CSV HEADER;
-COPY user_project FROM '/home/reports/user_project.csv' WITH CSV HEADER;
-COPY migrations FROM '/home/reports/migrations.csv' WITH CSV HEADER;
----------------------------------
-SELECT 'user_online' AS table_name, COUNT(*) AS row_count FROM user_online
-UNION ALL
-SELECT 'user_groups' AS table_name, COUNT(*) AS row_count FROM user_groups
-UNION ALL
-SELECT 'users' AS table_name, COUNT(*) AS row_count FROM users
-UNION ALL
-SELECT 'projects' AS table_name, COUNT(*) AS row_count FROM projects
-UNION ALL
-SELECT 'user_notifications_settings' AS table_name, COUNT(*) AS row_count FROM user_notifications_settings
-UNION ALL
-SELECT 'user_project' AS table_name, COUNT(*) AS row_count FROM user_project
-UNION ALL
-SELECT 'migrations' AS table_name, COUNT(*) AS row_count FROM migrations;
----------------------------------
+--------------------prd-msg-pg-03.maxbit.private-----------------------------------------------------------------------------------------
 
-
+/usr/pgsql-14/bin/psql -p 5432
 CREATE DATABASE messenger_martin OWNER php_notif;
----
-/usr/pgsql-16/bin/pg_dump -p 5432 -d messenger_drip -s | /usr/pgsql-16/bin/psql -p 5432 -d messenger_martin
-for table_name in event_lists integration_providers migrations route_providers projects;  do /usr/pgsql-16/bin/pg_dump -p 5432 -d messenger_martin -a -t $table_name | /usr/pgsql-16/bin/psql -p 5432 -d messenger_martin ; done
----
+
+[postgres@prd-msg-pg-03 ~]$
+/usr/pgsql-14/bin/pg_dump -p 5432 -d messenger_drip -s | /usr/pgsql-14/bin/psql -p 5432 -d messenger_martin
+for table_name in event_lists integration_providers migrations route_providers projects;  do /usr/pgsql-14/bin/pg_dump -p 5432 -d messenger_martin -a -t $table_name | /usr/pgsql-14/bin/psql -p 5432 -d messenger_martin ; done
+
+/usr/pgsql-14/bin/psql -p 5432
+\c messenger_drip
 COPY event_lists TO '/home/reports/event_lists.csv' WITH CSV HEADER;
 COPY integration_providers TO '/home/reports/integration_providers.csv' WITH CSV HEADER;
 COPY migrations TO '/home/reports/migrations.csv' WITH CSV HEADER;
@@ -50,7 +23,8 @@ UNION ALL
 SELECT 'route_providers' AS table_name, COUNT(*) AS row_count FROM route_providers
 UNION ALL
 SELECT 'projects' AS table_name, COUNT(*) AS row_count FROM projects;
----
+
+\c messenger_martin
 COPY event_lists FROM '/home/reports/event_lists.csv' WITH CSV HEADER;
 COPY integration_providers FROM '/home/reports/integration_providers.csv' WITH CSV HEADER;
 COPY migrations FROM '/home/reports/migrations.csv' WITH CSV HEADER;
@@ -65,4 +39,3 @@ UNION ALL
 SELECT 'route_providers' AS table_name, COUNT(*) AS row_count FROM route_providers
 UNION ALL
 SELECT 'projects' AS table_name, COUNT(*) AS row_count FROM projects;
----

@@ -1,7 +1,7 @@
 CREATE PROCEDURE Robo_Reindex.Reindexing_Stream(IN bloat_ratio_search double precision DEFAULT 24.99)
     LANGUAGE Plpgsql
 AS
-$$
+$$ -- Эту процедуру запускает cron /home/RegulatoryTasks/run_reindex.sh на prd-chat-pg-01.maxbit.private
 DECLARE
     conn_name             TEXT DEFAULT 'x_connect'; -- Имя соединения для robohub.public.DBLINK
     Record_Number_Details INTEGER; -- Переменная для хранения id операции
@@ -187,7 +187,6 @@ BEGIN
     END FLOW;
 END;
 $$;
-
 
 ALTER PROCEDURE Robo_Reindex.Reindexing_Stream(DOUBLE PRECISION) OWNER TO Gtimofeyev;
 

@@ -5,7 +5,7 @@ AS
 $$
 DECLARE
     semaphore INTEGER;
-    verbose   BOOLEAN := COALESCE(input_json ->> 'verbose', 'false')::BOOLEAN;
+    --verbose   BOOLEAN = COALESCE(input_json ->> 'verbose', 'false')::BOOLEAN;
 BEGIN
 
     CREATE TEMPORARY TABLE temp_0 (
@@ -109,4 +109,3 @@ END;
 $$;
 
 ALTER FUNCTION Robo.Pgbadger_Report_Slicer(JSONB) OWNER TO Robo_Sudo;
-

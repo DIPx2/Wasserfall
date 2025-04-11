@@ -1,7 +1,7 @@
 CREATE PROCEDURE Robo_Reindex.Reindexing_Stream(IN bloat_ratio_search double precision DEFAULT 24.99)
     LANGUAGE Plpgsql
 AS
-$$ -- VERSION 1-00-002
+$$
 DECLARE
     conn_name             TEXT DEFAULT 'x_connect'; -- Имя соединения для robohub.public.DBLINK
     Record_Number_Details INTEGER; -- Переменная для хранения id операции
@@ -21,7 +21,7 @@ BEGIN
         -- Цикл по всем серверам из таблицы "Servers"
         FOR server IN SELECT JSON_BUILD_OBJECT('Id_Conn', Pk_Id_Conn, 'port', Conn_Port, 'host',
                                                Conn_Host) AS server
-                      FROM Robohub.Reference."Servers"
+                      FROM Robohub.Robo_Reference."Servers"
                       WHERE (switch_serv & B'10000000') = B'10000000'
 
             LOOP
@@ -29,12 +29,12 @@ BEGIN
                 FOR database IN SELECT JSON_BUILD_OBJECT('Id_Db', Pk_Id_Db, 'Id_Conn', Fk_Pk_Id_Conn::TEXT,
                                                          'Scheme',
                                                          Db_Scheme, 'Name', Db_Name) AS database
-                                FROM Robohub.Reference."DataBases"
+                                FROM Robohub.Robo_Reference."DataBases"
                                 WHERE Fk_Pk_Id_Conn = (server ->> 'Id_Conn')::INTEGER
                                   AND (switch_db & B'10000000') = B'10000000'
                     LOOP
                         -- Вставка записи для логирования операции
-                        INSERT INTO Robohub.Reindex."Details" (Pk_Id_Det,
+                        INSERT INTO Robohub.Robo_Reindex."Details" (Pk_Id_Det,
                                                                Fk_Pk_Id_Db_J,
                                                                Det_Date,
                                                                Det_Clocking,
@@ -69,7 +69,7 @@ BEGIN
                             -- Обработка ошибок при подключении
                             WHEN OTHERS THEN
                                 GET STACKED DIAGNOSTICS err_mess = MESSAGE_TEXT, err_det = PG_EXCEPTION_DETAIL, err_cd = RETURNED_SQLSTATE;
-                                INSERT INTO Robohub.Reindex."Errors" (Pk_Id_Err, Fk_Pk_Id_Db_K, Err_Label, Err_Message,
+                                INSERT INTO Robohub.Robo_Reindex."Errors" (Pk_Id_Err, Fk_Pk_Id_Db_K, Err_Label, Err_Message,
                                                                       Err_Detail, Err_Code)
                                 VALUES (DEFAULT, Record_Number_Details, 'robohub.public.DBLINK_CONNECT', err_mess,
                                         err_det, err_cd);
@@ -142,7 +142,7 @@ BEGIN
                                             WHEN OTHERS THEN
                                                 PERFORM Robohub.Public.Dblink_Disconnect(conn_name);
                                                 GET STACKED DIAGNOSTICS err_mess = MESSAGE_TEXT, err_det = PG_EXCEPTION_DETAIL, err_cd = RETURNED_SQLSTATE;
-                                                INSERT INTO Robohub.Reindex."Errors" (Pk_Id_Err, Fk_Pk_Id_Db_K,
+                                                INSERT INTO Robohub.Robo_Reindex."Errors" (Pk_Id_Err, Fk_Pk_Id_Db_K,
                                                                                       Err_Label, Err_Message,
                                                                                       Err_Detail, Err_Code)
                                                 VALUES (DEFAULT, Record_Number_Details, 'DBLINK_CONNECT_REINDEX',
@@ -151,7 +151,7 @@ BEGIN
                                         END;
 
                                         -- Обновить журнал
-                                        UPDATE Robohub.Reindex."Details"
+                                        UPDATE Robohub.Robo_Reindex."Details"
                                         SET Det_Perc_Bloat = j_temp_bloat_ratio_percent,
                                             Det_Index_Name = j_temp_index_name,
                                             Det_Table_Name = j_temp_table_name,
@@ -172,7 +172,8 @@ BEGIN
                                         IF updated_bloat_ratio IS NULL THEN updated_bloat_ratio = -333; END IF;
 
                                         -- Обновить запись в логе с новым процентом "раздутости"
-                                        UPDATE Robohub.Reindex."Details"
+
+                                        UPDATE Robohub.Robo_Reindex."Details"
                                         SET Det_Perc_Bloat_After = updated_bloat_ratio
                                         WHERE Pk_Id_Det = Record_Number_Details;
 
@@ -186,6 +187,7 @@ BEGIN
     END FLOW;
 END;
 $$;
+
 
 ALTER PROCEDURE Robo_Reindex.Reindexing_Stream(DOUBLE PRECISION) OWNER TO Gtimofeyev;
 

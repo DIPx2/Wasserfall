@@ -49,7 +49,7 @@ BEGIN
 
         IF exists_in_remote THEN
             -- Генерация команды UPDATE для обновления всех полей
-            update_command := 
+            update_command = 
                 'UPDATE user_online ' ||
                 'SET status = ' || rec.status || 
                 ', updated_at = ''' || COALESCE(rec.updated_at::TEXT, 'NULL') || ''' ' ||
@@ -57,7 +57,7 @@ BEGIN
             RAISE NOTICE '%', update_command; -- Вывод команды UPDATE
         ELSE
             -- Генерация команды INSERT для вставки новой записи
-            insert_command := 
+            insert_command = 
                 'INSERT INTO user_online (id, status, updated_at) ' ||
                 'VALUES (''' || rec.id || ''', ' || rec.status || 
                 ', ''' || COALESCE(rec.updated_at::TEXT, 'NULL') || ''');';

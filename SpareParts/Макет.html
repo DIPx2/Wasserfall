@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Справочник вашей темы</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 40px;
+      background-color: #fefefe;
+      color: #212529;
+    }
+    h1, h2, h3 {
+      color: #343a40;
+    }
+    nav ul {
+      padding-left: 20px;
+    }
+    nav li {
+      margin: 8px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    th, td {
+      border: 1px solid #dee2e6;
+      padding: 10px;
+    }
+    th {
+      background: #343a40;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background: #f1f3f5;
+    }
+    code {
+      background: #f8f9fa;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .cover {
+      text-align: center;
+      margin: 100px 0 60px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Ваш справочник</h1>
+  <h2>Описание темы</h2>
+  <p>Подробная документация для пользователей</p>
+  <p style="color: #adb5bd;">Дата создания: 2025</p>
+</div>
+
+<hr>
+
+<nav>
+  <strong>Содержание:</strong>
+  <ul>
+    <li><a href="#section1">1. Раздел 1</a></li>
+    <li><a href="#section2">2. Раздел 2</a></li>
+    <li><a href="#section3">3. Раздел 3</a></li>
+  </ul>
+</nav>
+
+<h2 id="section1">1. Раздел 1</h2>
+<p>Описание первого раздела.</p>
+<table>
+  <thead><tr><th>Поле</th><th>Описание</th><th>Пример</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>Идентификатор</td><td>123</td></tr>
+    <tr><td><code>name</code></td><td>Название</td><td>Пример</td></tr>
+  </tbody>
+</table>
+
+<h2 id="section2">2. Раздел 2</h2>
+<p>Описание второго раздела.</p>
+
+<h2 id="section3">3. Раздел 3</h2>
+<p>Описание третьего раздела.</p>
+
+</body>
+</html>

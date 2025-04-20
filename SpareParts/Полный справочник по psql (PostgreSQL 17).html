@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Полный справочник по psql</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f8f9fa;
+    }
+    h1, h2 {
+      color: #343a40;
+    }
+    nav ul {
+      list-style: none;
+      padding: 0;
+    }
+    nav ul li {
+      margin-bottom: 5px;
+    }
+    nav ul li a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    nav ul li a:hover {
+      text-decoration: underline;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      margin-bottom: 30px;
+    }
+    th, td {
+      border: 1px solid #adb5bd;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #6c757d;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #e9ecef;
+    }
+    tr:nth-child(odd) {
+      background-color: #ffffff;
+    }
+    code {
+      font-family: monospace;
+      background-color: #f1f3f5;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .category {
+      padding-top: 50px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Полный справочник по psql (PostgreSQL 17)</h1>
+
+  <nav>
+    <ul>
+      <li><a href="#general">1. Общие команды</a></li>
+      <li><a href="#connection">2. Информация о соединении</a></li>
+      <li><a href="#buffer">3. Работа с буфером</a></li>
+      <li><a href="#io">4. Ввод/вывод</a></li>
+      <li><a href="#conditions">5. Условные команды</a></li>
+      <li><a href="#info">6. Информационные команды</a></li>
+      <li><a href="#format">7. Форматирование вывода</a></li>
+      <li><a href="#lo">8. Работа с большими объектами</a></li>
+      <li><a href="#options">9. Опции запуска psql</a></li>
+    </ul>
+  </nav>
+
+  <div id="general" class="category">
+    <h2>1. Общие команды / General Commands</h2>
+    <table>
+      <thead><tr><th>Команда</th><th>Описание (RU)</th><th>Description (EN)</th><th>Пример</th></tr></thead>
+      <tbody>
+        <tr><td><code>\?</code></td><td>Справка по метакомандам</td><td>List all psql commands</td><td><code>\?</code></td></tr>
+        <tr><td><code>\q</code></td><td>Выход из psql</td><td>Quit psql</td><td><code>\q</code></td></tr>
+        <tr><td><code>\cd</code></td><td>Сменить текущую директорию</td><td>Change the working directory</td><td><code>\cd /tmp</code></td></tr>
+        <tr><td><code>\!</code></td><td>Выполнить команду оболочки</td><td>Execute shell command</td><td><code>\! ls</code></td></tr>
+        <tr><td><code>\timing</code></td><td>Включить/выключить отображение времени</td><td>Toggle timing of commands</td><td><code>\timing</code></td></tr>
+        <tr><td><code>\set</code></td><td>Установить переменную</td><td>Set internal variable</td><td><code>\set var 'value'</code></td></tr>
+        <tr><td><code>\unset</code></td><td>Удалить переменную</td><td>Unset internal variable</td><td><code>\unset var</code></td></tr>
+        <tr><td><code>\setenv</code></td><td>Установить переменную окружения</td><td>Set environment variable</td><td><code>\setenv PAGER less</code></td></tr>
+        <tr><td><code>\prompt</code></td><td>Запросить значение у пользователя</td><td>Prompt user input</td><td><code>\prompt 'Введите:' var</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="connection" class="category">
+    <h2>2. Информация о соединении / Connection Info</h2>
+    <table>
+      <thead><tr><th>Команда</th><th>Описание (RU)</th><th>Description (EN)</th><th>Пример</th></tr></thead>
+      <tbody>
+        <tr><td><code>\conninfo</code></td><td>Информация о соединении</td><td>Display connection information</td><td><code>\conninfo</code></td></tr>
+        <tr><td><code>\encoding</code></td><td>Показать или установить кодировку</td><td>Show or set client encoding</td><td><code>\encoding UTF8</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="buffer" class="category">
+    <h2>3. Работа с буфером / Query Buffer</h2>
+    <table>
+      <thead><tr><th>Команда</th><th>Описание (RU)</th><th>Description (EN)</th><th>Пример</th></tr></thead>
+      <tbody>
+        <tr><td><code>\e</code></td><td>Открыть внешний редактор</td><td>Edit the query buffer</td><td><code>\e</code></td></tr>
+        <tr><td><code>\g</code></td><td>Выполнить буфер</td><td>Execute the query buffer</td><td><code>\g</code></td></tr>
+        <tr><td><code>\gexec</code></td><td>Выполнить результат как команду</td><td>Execute result of query</td><td><code>\gexec</code></td></tr>
+        <tr><td><code>\gset</code></td><td>Сохранить результат в переменные</td><td>Put query result into variables</td><td><code>\gset</code></td></tr>
+        <tr><td><code>\r</code></td><td>Очистить буфер</td><td>Reset the query buffer</td><td><code>\r</code></td></tr>
+        <tr><td><code>\s</code></td><td>Показать историю команд</td><td>Display command history</td><td><code>\s</code></td></tr>
+        <tr><td><code>\w</code></td><td>Сохранить буфер в файл</td><td>Write query buffer to file</td><td><code>\w query.sql</code></td></tr>
+        <tr><td><code>\watch</code></td><td>Повторное выполнение команды</td><td>Repeat query every n seconds</td><td><code>\watch 2</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="io" class="category">
+    <h2>4. Ввод/вывод / Input and Output</h2>
+    <table>
+      <thead><tr><th>Команда</th><th>Описание (RU)</th><th>Description (EN)</th><th>Пример</th></tr></thead>
+      <tbody>
+        <tr><td><code>\i</code></td><td>Выполнить команды из файла</td><td>Execute commands from file</td><td><code>\i script.sql</code></td></tr>
+        <tr><td><code>\o</code></td><td>Перенаправить вывод в файл</td><td>Send query results to file</td><td><code>\o output.txt</code></td></tr>
+        <tr><td><code>\copy</code></td><td>Копировать между файлом и таблицей</td><td>Copy between file and table</td><td><code>\copy table TO 'file.csv' CSV</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="conditions" class="category">
+    <h2>5. Условные команды / Conditional Commands</h2>
+    <table>
+      <thead><tr><th>Команда</th><th>Описание (RU)</th><th>Description (EN)</th><th>Пример</th></tr></thead>
+      <tbody>
+        <tr><td><code>\if</code></td><td>Начало условного блока</td><td>Start conditional block</td><td><code>\if :var = '1'</code></td></tr>
+        <tr><td><code>\elif</code></td><td>Альтернативное условие</td><td>Else if</td><td><code>\elif :var = '2'</code></td></tr>
+        <tr><td><code>\else</code></td><td>Иначе</td><td>Else</td><td><code>\else</code></td></tr>
+        <tr><td><code>\endif</code></td><td>Конец условия</td><td>End if block</td><td><code>\endif</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="info" class="category">
+    <h2>6. Информационные команды / Informational Commands</h2>
+    <table>
+      <thead><tr><th>Команда</th><th>Описание (RU)</th><th>Description (EN)</th><th>Пример</th></tr></thead>
+      <tbody>
+        <tr><td><code>\d</code></td><td>Описание объекта</td><td>Describe object</td><td><code>\d mytable</code></td></tr>
+        <tr><td><code>\dt</code></td><td>Список таблиц</td><td>List tables</td><td><code>\dt</code></td></tr>
+        <tr><td><code>\dv</code></td><td>Список представлений</td><td>List views</td><td><code>\dv</code></td></tr>
+        <tr><td><code>\df</code></td><td>Список функций</td><td>List functions</td><td><code>\df</code></td></tr>
+        <tr><td><code>\di</code></td><td>Список индексов</td><td>List indexes</td><td><code>\di</code></td></tr>
+        <tr><td><code>\dn</code></td><td>Список схем</td><td>List schemas</td><td><code>\dn</code></td></tr>
+        <tr><td><code>\du</code></td><td>Список ролей</td><td>List roles</td><td><code>\du</code></td></tr>
+        <tr><td><code>\l</code></td><td>Список баз данных</td><td>List databases</td><td><code>\l</code></td></tr>
+        <tr><td><code>\z</code></td><td>Права доступа</td><td>Access privileges</td><td><code>\z</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="format" class="category">
+    <h2>7. Форматирование вывода / Output Formatting</h2>
+    <table>
+      <thead><tr><th>Команда</th><th>Описание (RU)</th><th>Description (EN)</th><th>Пример</th></tr></thead>
+      <tbody>
+        <tr><td><code>\a</code></td><td>Выключить выравнивание</td><td>Toggle unaligned output</td><td><code>\a</code></td></tr>
+        <tr><td><code>\H</code></td><td>Вывод в HTML</td><td>HTML format output</td><td><code>\H</code></td></tr>
+        <tr><td><code>\x</code></td><td>Расширенный вывод</td><td>Expanded display mode</td><td><code>\x</code></td></tr>
+        <tr><td><code>\pset</code></td><td>Установить параметры вывода</td><td>Set printing options</td><td><code>\pset format csv</code></td></tr>
+        <tr><td><code>\C</code></td><td>Заголовок таблицы</td><td>Set table title</td><td><code>\C 'Список'</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="lo" class="category">
+    <h2>8. Работа с большими объектами / Large Objects</h2>
+    <table>
+      <thead><tr><th>Команда</th><th>Описание (RU)</th><th>Description (EN)</th><th>Пример</th></tr></thead>
+      <tbody>
+        <tr><td><code>\lo_list</code></td><td>Список больших объектов</td><td>List large objects</td><td><code>\lo_list</code></td></tr>
+        <tr><td><code>\lo_export</code></td><td>Экспорт объекта в файл</td><td>Export large object</td><td><code>\lo_export 1234 '/tmp/file'</code></td></tr>
+        <tr><td><code>\lo_import</code></td><td>Импорт файла в объект</td><td>Import file as large object</td><td><code>\lo_import '/tmp/file'</code></td></tr>
+        <tr><td><code>\lo_unlink</code></td><td>Удалить объект</td><td>Remove large object</td><td><code>\lo_unlink 1234</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="options" class="category">
+    <h2>9. Опции запуска psql / psql Startup Options</h2>
+    <table>
+      <thead><tr><th>Опция</th><th>Описание (RU)</th><th>Description (EN)</th></tr></thead>
+      <tbody>
+        <tr><td><code>-d</code></td><td>Имя базы данных</td><td>Database name</td></tr>
+        <tr><td><code>-U</code></td><td>Имя пользователя</td><td>User name</td></tr>
+        <tr><td><code>-h</code></td><td>Хост</td><td>Server host</td></tr>
+        <tr><td><code>-p</code></td><td>Порт</td><td>Port number</td></tr>
+        <tr><td><code>-W</code></td><td>Запрос пароля</td><td>Prompt for password</td></tr>
+        <tr><td><code>-f</code></td><td>Файл SQL-скрипта</td><td>Read commands from file</td></tr>
+        <tr><td><code>-c</code></td><td>Выполнить команду</td><td>Run single command</td></tr>
+        <tr><td><code>-v</code></td><td>Установить переменную</td><td>Set psql variable</td></tr>
+        <tr><td><code>--help</code></td><td>Показать справку</td><td>Show help</td></tr>
+        <tr><td><code>--version</code></td><td>Показать версию</td><td>Show version</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>

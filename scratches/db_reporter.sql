@@ -1,3 +1,12 @@
+--==========================
+-- USE AutomationServer.RoboHub.Robo_statistics
+--==========================
+
+/*
+	-- Use the public schema on a remote server
+	SELECT '''dbname=' || datname || ' user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=''' || ','
+	FROM pg_database WHERE datname NOT IN ('postgres', 'template1', 'template0');
+*/
 /*
 DO $$ ------------ Наполнение тыблицы
 
@@ -6,6 +15,26 @@ DECLARE
     tbl record;
     db record;
     db_list text[] = ARRAY[
+
+'dbname=mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=flagman_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=rox_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=volna_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=callback_media_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=legzo_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=jet_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=fresh_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=sol_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=izzi_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=starda_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=drip_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=1go_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=lex_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=irwin_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=monro_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path=',
+'dbname=gizbo_mbss_master user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-chat-pg-02.maxbit.private port=5434 options=-csearch_path='
+
+/*
 
     'dbname=messenger_volna user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-msg-pg-03.maxbit.private port=5432 options=-csearch_path=',
     'dbname=messenger_drip user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-msg-pg-03.maxbit.private port=5432 options=-csearch_path=',
@@ -23,7 +52,7 @@ DECLARE
     'dbname=messenger_irwin user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-msg-pg-03.maxbit.private port=5432 options=-csearch_path=',
     'dbname=messenger_flagman user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-msg-pg-03.maxbit.private port=5432 options=-csearch_path=',
     'dbname=messenger_martin user=robo_sudo password=%dFgH8!zX4&kLmT2 host=prd-msg-pg-03.maxbit.private port=5432 options=-csearch_path='
-
+*/
     ];
 BEGIN
 
@@ -41,10 +70,10 @@ BEGIN
     FOREACH conn_str IN ARRAY db_list
     LOOP
 
-        SELECT * INTO db FROM dblink(conn_str, 'SELECT current_database(), pg_database_size(current_database())')
+        SELECT * INTO db FROM public.dblink(conn_str, 'SELECT current_database(), pg_database_size(current_database())')
             AS t(dbname text, db_size_bytes bigint);
 
-        FOR tbl IN SELECT * FROM dblink(conn_str,
+        FOR tbl IN SELECT * FROM public.dblink(conn_str,
                 $sql$
                     SELECT relname, pg_total_relation_size(format('%I.%I', schemaname, relname)) AS size_bytes
                     FROM pg_stat_user_tables

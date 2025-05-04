@@ -1,0 +1,138 @@
+--prd-chat-pg-02.maxbit.private:5434------------------------------------------------------------------------------------------------------------------------------
+
+Каталог для дампов: /home/reports
+
+Шаг 1. Создание дампа всех таблиц, кроме users, user_project, user_groups, groups
+
+export PGPASSWORD='%dFgH8!zX4&kLmT2'
+
+--format=directory \ ------ Как каталог!!!
+
+/usr/pgsql-16/bin/pg_dump \
+  --host=prd-chat-pg-02.maxbit.private \
+  --port=5434 \
+  --username=robo_sudo \
+  --dbname=1go_mbss_master \
+  --format=directory \
+  --jobs=4 \
+  --no-owner \
+  --no-privileges \
+  --verbose \
+  --exclude-table=users \
+  --exclude-table=user_project \
+  --exclude-table=user_groups \
+  --exclude-table=groups \
+  --file=/home/reports/full.dump
+
+Шаг 2. Дамп только таблиц users, user_project, user_groups, groups в SQL-формате
+
+/usr/pgsql-16/bin/pg_dump \
+  --host=prd-chat-pg-02.maxbit.private \
+  --port=5434 \
+  --username=robo_sudo \
+  --dbname=1go_mbss_master \
+  --format=plain \
+  --data-only \
+  --table=users \
+  --table=user_project \
+  --table=user_groups \
+  --table=groups \
+  --no-owner \
+  --no-privileges \
+  --verbose \
+  > /home/reports/partial.sql
+
+Шаг 3. Модификация SQL-дампа: ON CONFLICT DO NOTHING
+  
+sed -i -E 's/^INSERT INTO ([^ ]+) /INSERT INTO \1 ON CONFLICT DO NOTHING /' /home/reports/partial.sql
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Шаг 4. Очистка базы local от всех таблиц (кроме user-таблиц)
+
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = 'public'
+          AND tablename NOT IN ('users', 'user_project', 'user_groups', 'groups')
+    LOOP
+        EXECUTE format('TRUNCATE TABLE public.%I CASCADE', r.tablename);
+    END LOOP;
+END $$;
+
+------------------------------scp root@prd-chat-pg-02.maxbit.private:/home/reports/{full.dump,partial.sql} /home/reports/
+
+Шаг 5. Создать бэкап привилегий в целевой базе
+
+/usr/pgsql-16/bin/pg_dumpall \
+  --host=localhost \
+  --port=15434 \
+  --username=robo_sudo \
+  --globals-only \
+  --file=/home/reports/privileges.sql
+
+
+Шаг 6. Загрузка из дампа всех таблиц (кроме user-таблиц)
+
+/usr/pgsql-16/bin/pg_restore \
+  --host=localhost \
+  --port=15434 \
+  --username=robo_sudo \
+  --dbname=1go_mbss_stage \
+  --format=directory \
+  --clean \
+  --exit-on-error \
+  --jobs=4 \
+  --no-owner \
+  --no-privileges \
+  --verbose \
+  /home/reports/full.dump
+
+Шаг 7. Восстановить сохранённые привилегии
+
+/usr/pgsql-16/binpsql -U robo_sudo -h localhost -p 15434 -d 1go_mbss_stage -f /home/reports/privileges.sql
+
+
+Шаг 7. Загрузка из дампа user-таблиц
+
+/usr/pgsql-16/bin/psql -p 15434 \
+  --host=localhost \
+  --port=5432 \
+  --username=robo_sudo \
+  --dbname=1go_mbss_stage \
+  --file=/home/reports/partial.sql
+
+Шаг 8. Очистка переменной пароля
+
+unset PGPASSWORD
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+1 Таблицы users -  merge без дубликатов по email при конфликте - стэёдж первоистоник
+2 Таблицы user_progect -  merge на конфликт носин
+
+
+--------------------------
+3 User_onlinу  - truncate insert from USERS
+Эти группы
+1002
+1003
+1004
+1005
+1006
+1007
+1008
+1009
+1010
+1011
+1012
+1013
+1014
+должны сохранисться в стейдже
+в таблицах user_group and group
+---------------------------------------

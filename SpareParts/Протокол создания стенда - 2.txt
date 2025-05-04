@@ -1,0 +1,110 @@
+-----------------------------------------------------------------------------------
+Шаг 1. Создание дампа всех таблиц (кроме user-таблиц)
+bash
+export PGPASSWORD='%dFgH8!zX4&kLmT2'
+
+/usr/pgsql-16/bin/pg_dump \
+  --host=prd-chat-pg-02.maxbit.private \
+  --port=5434 \
+  --username=robo_sudo \
+  --dbname=1go_mbss_master \
+  --format=directory \
+  --jobs=4 \
+  --no-owner \
+  --no-privileges \
+  --verbose \
+  --file=/home/reports/full.dump
+-----------------------------------------------------------------------------------
+Шаг 2. Дамп user-таблиц в SQL-формате
+bash
+/usr/pgsql-16/bin/pg_dump \
+  --host=prd-chat-pg-02.maxbit.private \
+  --port=5434 \
+  --username=robo_sudo \
+  --dbname=1go_mbss_master \
+  --format=plain \
+  --data-only \
+  --table=users \
+  --table=groups \
+  --table=user_groups \
+  --table=user_project \
+  --no-owner \
+  --no-privileges \
+  --verbose \
+  > /home/reports/partial.sql
+-----------------------------------------------------------------------------------
+Шаг 3. Создание дампа привилегий ИСХОДНОЙ базы
+bash
+/usr/pgsql-16/bin/pg_dumpall \
+  --host=prd-chat-pg-02.maxbit.private \
+  --port=5434 \
+  --username=robo_sudo \
+  --globals-only \
+  --file=/home/reports/source_privileges.sql
+-----------------------------------------------------------------------------------
+Шаг 4. Модификация SQL-дампа для обработки конфликтов
+bash
+sed -i -E '
+  s/^INSERT INTO users /INSERT INTO users ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email/;
+  s/^INSERT INTO groups /INSERT INTO groups ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name/;
+  s/^INSERT INTO user_groups /INSERT INTO user_groups ON CONFLICT (user_id, group_id) DO NOTHING/;
+  s/^INSERT INTO user_project /INSERT INTO user_project ON CONFLICT (user_id, project_id) DO NOTHING/
+' /home/reports/partial.sql
+-----------------------------------------------------------------------------------
+Шаг 5. Переименование старых таблиц в _old
+bash
+psql -U robo_sudo -h localhost -p 15434 -d 1go_mbss_stage << EOF
+DO \$\$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'users' AND schemaname = 'public') THEN
+    ALTER TABLE public.users RENAME TO users_old;
+  END IF;
+  
+  IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'groups' AND schemaname = 'public') THEN
+    ALTER TABLE public.groups RENAME TO groups_old;
+  END IF;
+  
+  IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'user_groups' AND schemaname = 'public') THEN
+    ALTER TABLE public.user_groups RENAME TO user_groups_old;
+  END IF;
+  
+  IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'user_project' AND schemaname = 'public') THEN
+    ALTER TABLE public.user_project RENAME TO user_project_old;
+  END IF;
+END \$\$;
+EOF
+-----------------------------------------------------------------------------------
+Шаг 6. Восстановление основного дампа
+bash
+/usr/pgsql-16/bin/pg_restore \
+  --host=localhost \
+  --port=15434 \
+  --username=robo_sudo \
+  --dbname=1go_mbss_stage \
+  --format=directory \
+  --clean \
+  --exit-on-error \
+  --jobs=4 \
+  --no-owner \
+  --no-privileges \
+  --verbose \
+  /home/reports/full.dump
+-----------------------------------------------------------------------------------
+Шаг 7. Восстановление привилегий из исходной базы
+bash
+psql -U robo_sudo -h localhost -p 15434 -d 1go_mbss_stage -f /home/reports/source_privileges.sql
+-----------------------------------------------------------------------------------
+Шаг 8. Восстановление user-таблиц с обработкой конфликтов
+bash
+psql -U robo_sudo -h localhost -p 15434 -d 1go_mbss_stage -f /home/reports/partial.sql
+-----------------------------------------------------------------------------------
+Шаг 9. Фиксация состояния (опционально)
+bash
+psql -U robo_sudo -h localhost -p 15434 -d 1go_mbss_stage << EOF
+ANALYZE;
+EOF
+-----------------------------------------------------------------------------------
+Шаг 10. Очистка переменной пароля
+bash
+unset PGPASSWORD
+-----------------------------------------------------------------------------------

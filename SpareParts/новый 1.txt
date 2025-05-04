@@ -1,0 +1,3 @@
+/usr/lib/postgresql/16/bin/pg_dump -p 5434 -U robo_sudo -h prd-chat-pg-02.maxbit.private -d mbss_master -j 8 -Fd -f /home/reports/dump
+
+tar -cv /home/reports/mbss_master.dump | bzip2 -9 | split -d -b 900M - /home/reports/mbss_master_part_

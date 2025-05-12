@@ -253,7 +253,7 @@ SET
 ALTER TABLE user_project ADD CONSTRAINT user_project_user_id_project_id_unique UNIQUE (user_id, project_id);
 INSERT INTO user_project (user_id, project_id) SELECT user_id, project_id FROM user_project_old ON CONFLICT (user_id, project_id) DO NOTHING;
 --=======================
--- 10. RESTORATION
+-- 10. RESTORATION CONSTRAINTS
 --=======================
 ALTER TABLE users DROP CONSTRAINT users_email_unique;
 ALTER TABLE user_project DROP CONSTRAINT user_project_user_id_project_id_unique;
@@ -264,3 +264,6 @@ DROP TABLE public.users_old;
 DROP TABLE public.groups_old;
 DROP TABLE public.user_groups_old;
 DROP TABLE public.user_project_old;
+--=======================
+-- EOF
+--=======================

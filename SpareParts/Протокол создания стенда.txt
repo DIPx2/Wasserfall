@@ -113,12 +113,9 @@ unset PGPASSWORD
 
 
 
-1 Таблицы users -  merge без дубликатов по email при конфликте - стэёдж первоистоник
-2 Таблицы user_progect -  merge на конфликт носин
-
-
---------------------------
-3 User_onlinу  - truncate insert from USERS
+1 Таблицы users -  merge без дубликатов по email при конфликте - стэйдж главный - первоистоник
+2 Таблицы user_progect -  merge на конфликт nothin
+3 User_onlinу  - truncate  insert from USERS
 Эти группы
 1002
 1003
@@ -133,6 +130,5 @@ unset PGPASSWORD
 1012
 1013
 1014
-должны сохранисться в стейдже
-в таблицах user_group and group
+должны сохранисться в стейдже в таблицах user_group and group
 ---------------------------------------

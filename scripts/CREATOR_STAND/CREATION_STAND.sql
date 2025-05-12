@@ -1,12 +1,48 @@
---=======================
--- 1. MAPPING
---=======================
-CREATE EXTENSION IF NOT EXISTS postgres_fdw;
-CREATE SERVER prd_chat_pg_fdw FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'prd-chat-pg-02.maxbit.private', port '5434', dbname '1go_mbss_master');
-CREATE USER MAPPING FOR CURRENT_USER SERVER prd_chat_pg_fdw OPTIONS (user 'robo_sudo', password '%dFgH8!zX4&kLmT2');
-CREATE SCHEMA fdw_1go_mbss_master;
-IMPORT FOREIGN SCHEMA public FROM SERVER prd_chat_pg_fdw INTO fdw_1go_mbss_master;
-REVOKE INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA fdw_1go_mbss_master FROM PUBLIC;
+DO
+$stand$
+DECLARE
+    arr_master TEXT[] = ARRAY[
+		'volna_mbss_master',
+		'starda_mbss_master',
+		'sol_mbss_master',
+		'rox_mbss_master',
+		'monro_mbss_master',
+		'lex_mbss_master',
+		'legzo_mbss_master',
+		'jet_mbss_master',
+		'izzi_mbss_master',
+		'irwin_mbss_master',
+		'gizbo_mbss_master',
+		'fresh_mbss_master',
+		'flagman_mbss_master',
+		'drip_mbss_master',
+		'callback_media_master',
+		'1go_mbss_master'
+    ];
+    arr_stage TEXT[] = ARRAY[
+		'volna_mbss_stage',
+		'starda_mbss_stage',
+		'sol_mbss_stage',
+		'rox_mbss_stage',
+		'monro_mbss_stage',
+		'mbss_stage',
+		'maxmind_stage',
+		'lex_mbss_stage',
+		'legzo_mbss_stage',
+		'jet_mbss_stage',
+		'izzi_mbss_stage',
+		'irwin_mbss_stage',
+		'gizbo_mbss_stage',
+		'fresh_mbss_stage',
+		'flagman_mbss_stage',
+		'drip_mbss_stage',
+		'callback_media_stage',
+		'callback_media',
+		'1go_mbss_stage'
+    ];
+
+SET search_path TO asd;
+
 --=======================
 -- 2. OLD-COPING
 --=======================
@@ -226,7 +262,7 @@ END $$;
 --=======================
 -- 7. FILLING user_online
 --=======================
-TRUNCATE TABLE 	;
+TRUNCATE TABLE user_online;
 INSERT INTO user_online ("id", "status", "updated_at") SELECT "id", 0, CURRENT_TIMESTAMP FROM fdw_1go_mbss_master.users;
 --=======================
 -- 8. FILLING WITHOUT DUPLICATES BY EMAIL
@@ -253,7 +289,7 @@ SET
 ALTER TABLE user_project ADD CONSTRAINT user_project_user_id_project_id_unique UNIQUE (user_id, project_id);
 INSERT INTO user_project (user_id, project_id) SELECT user_id, project_id FROM user_project_old ON CONFLICT (user_id, project_id) DO NOTHING;
 --=======================
--- 10. RESTORATION
+-- 10. RESTORATION CONSTRAINTS
 --=======================
 ALTER TABLE users DROP CONSTRAINT users_email_unique;
 ALTER TABLE user_project DROP CONSTRAINT user_project_user_id_project_id_unique;
@@ -264,3 +300,8 @@ DROP TABLE public.users_old;
 DROP TABLE public.groups_old;
 DROP TABLE public.user_groups_old;
 DROP TABLE public.user_project_old;
+
+$stand$
+--=======================
+-- EOF
+--=======================

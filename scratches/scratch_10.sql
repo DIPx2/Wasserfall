@@ -1,90 +1,14 @@
 --=======================
--- 1. MAPPING
---=======================
-CREATE EXTENSION IF NOT EXISTS postgres_fdw;
-CREATE SERVER prd_chat_pg_fdw FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'prd-chat-pg-02.maxbit.private', port '5434', dbname '1go_mbss_master');
-CREATE USER MAPPING FOR CURRENT_USER SERVER prd_chat_pg_fdw OPTIONS (user 'robo_sudo', password '%dFgH8!zX4&kLmT2');
-CREATE SCHEMA fdw_1go_mbss_master;
-IMPORT FOREIGN SCHEMA public FROM SERVER prd_chat_pg_fdw INTO fdw_1go_mbss_master;
-REVOKE INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA fdw_1go_mbss_master FROM PUBLIC;
---=======================
--- 2. OLD-COPING
---=======================
-CREATE TABLE users_old AS SELECT * FROM users;
-CREATE TABLE groups_old AS SELECT * FROM groups;
-CREATE TABLE user_groups_old AS SELECT * FROM user_groups;
-CREATE TABLE user_project_old AS SELECT * FROM user_project;
---=======================
--- 3. EXPORT OF PRIVILEGES
---=======================
-DO $$
-BEGIN
-    EXECUTE 'COPY (
-        
-        SELECT 
-            grantor,
-            grantee,
-            privilege_type,
-            table_schema AS object_schema,
-            table_name AS object_name,
-            ''TABLE'' AS object_type
-        FROM information_schema.table_privileges
-        WHERE table_catalog = ''1go_mbss_stage''
-
-        UNION ALL
-
-        SELECT
-            pg_get_userbyid(acl.grantor) AS grantor,
-            acl.grantee::regrole::text AS grantee,
-            acl.privilege_type,
-            n.nspname AS object_schema,
-            ''SCHEMA'' AS object_name,
-            ''SCHEMA'' AS object_type
-        FROM pg_namespace n,
-             aclexplode(n.nspacl) AS acl
-        WHERE n.nspname NOT LIKE ''pg_%'' 
-          AND n.nspname != ''information_schema''
-
-        UNION ALL
-
-        SELECT
-            pg_get_userbyid(acl.grantor) AS grantor,
-            acl.grantee::regrole::text AS grantee,
-            acl.privilege_type,
-            ''DATABASE'' AS object_schema,
-            ''DATABASE'' AS object_name,
-            ''DATABASE'' AS object_type
-        FROM pg_database d,
-             aclexplode(d.datacl) AS acl
-        WHERE d.datname = ''1go_mbss_stage''
-
-        UNION ALL
-
-        SELECT
-            pg_get_userbyid(acl.grantor) AS grantor,
-            acl.grantee::regrole::text AS grantee,
-            acl.privilege_type,
-            n.nspname AS object_schema,
-            p.proname AS object_name,
-            ''FUNCTION'' AS object_type
-        FROM pg_proc p
-        JOIN pg_namespace n ON p.pronamespace = n.oid,
-             aclexplode(p.proacl) AS acl
-        WHERE n.nspname NOT LIKE ''pg_%''
-          AND n.nspname != ''information_schema''
-    ) TO ''/home/reports/1go_mbss_stage_privileges.csv'' WITH CSV HEADER;';
-END $$;
---=======================
 -- 4. DROPPING TABLES
 --=======================
-DO $$ 
-DECLARE 
+DO $$
+DECLARE
     tbl RECORD;
 BEGIN
-    FOR tbl IN 
-        SELECT tablename 
-        FROM pg_tables 
-        WHERE schemaname = 'public' 
+    FOR tbl IN
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = 'public'
         AND tablename NOT IN ('users_old', 'groups_old', 'user_groups_old', 'user_project_old' )
     LOOP
         EXECUTE format('DROP TABLE IF EXISTS %I CASCADE', tbl.tablename);
@@ -168,7 +92,7 @@ BEGIN
         BEGIN
             -- Проверить существование роли
             SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname = rec.grantee) INTO role_exists;
-            
+
             IF NOT role_exists THEN
                 RAISE INFO 'Роль "%" не существует, пропустить привилегию: % ON % %.%',
                     rec.grantee, rec.privilege_type, rec.object_type, rec.object_schema, rec.object_name;
@@ -186,7 +110,7 @@ BEGIN
                 );
                 RAISE INFO 'Восстановлена привилегия: % ON % %.% TO %',
                     rec.privilege_type, rec.object_type, rec.object_schema, rec.object_name, rec.grantee;
-            
+
             ELSIF rec.object_type = 'SCHEMA' THEN
                 EXECUTE format(
                     'GRANT %s ON SCHEMA %I TO %I;',
@@ -196,7 +120,7 @@ BEGIN
                 );
                 RAISE INFO 'Восстановлена привилегия: % ON SCHEMA % TO %',
                     rec.privilege_type, rec.object_schema, rec.grantee;
-            
+
             ELSIF rec.object_type = 'DATABASE' THEN
                 EXECUTE format(
                     'GRANT %s ON DATABASE %I TO %I;',
@@ -206,11 +130,11 @@ BEGIN
                 );
                 RAISE INFO 'Восстановлена привилегия: % ON DATABASE % TO %',
                     rec.privilege_type, current_database(), rec.grantee;
-            
+
             ELSIF rec.object_type = 'FUNCTION' THEN
                 RAISE INFO 'Пропущена функция %.% (требуется информация о аргументах)',
                     rec.object_schema, rec.object_name;
-            
+
             ELSE
                 RAISE INFO 'Пропущен неизвестный тип объекта: % (%.%.%)',
                     rec.object_type, rec.object_schema, rec.object_name, rec.grantee;
@@ -220,7 +144,7 @@ BEGIN
                 rec.object_type, rec.object_schema, rec.object_name, rec.grantee, SQLERRM;
         END;
     END LOOP;
-   
+
     DROP TABLE tmp_privs;
 END $$;
 --=======================
@@ -234,9 +158,9 @@ INSERT INTO user_online ("id", "status", "updated_at") SELECT "id", 0, CURRENT_T
 ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);
 INSERT INTO users (id, email, name, avatar_link, role, status, password, created_at, updated_at, ready_after_login, max_active_tickets)
 SELECT id, email, name, avatar_link, role, status, password, created_at, updated_at, ready_after_login, max_active_tickets
-FROM users_old 
-ON CONFLICT (email) DO UPDATE 
-SET 
+FROM users_old
+ON CONFLICT (email) DO UPDATE
+SET
     id = EXCLUDED.id,
     name = EXCLUDED.name,
     avatar_link = EXCLUDED.avatar_link,
@@ -253,7 +177,7 @@ SET
 ALTER TABLE user_project ADD CONSTRAINT user_project_user_id_project_id_unique UNIQUE (user_id, project_id);
 INSERT INTO user_project (user_id, project_id) SELECT user_id, project_id FROM user_project_old ON CONFLICT (user_id, project_id) DO NOTHING;
 --=======================
--- 10. RESTORATION
+-- 10. RESTORATION CONSTRAINTS
 --=======================
 ALTER TABLE users DROP CONSTRAINT users_email_unique;
 ALTER TABLE user_project DROP CONSTRAINT user_project_user_id_project_id_unique;
@@ -264,3 +188,6 @@ DROP TABLE public.users_old;
 DROP TABLE public.groups_old;
 DROP TABLE public.user_groups_old;
 DROP TABLE public.user_project_old;
+--=======================
+-- EOF
+--=======================

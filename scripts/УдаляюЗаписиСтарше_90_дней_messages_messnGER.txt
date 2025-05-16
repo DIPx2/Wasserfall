@@ -1,0 +1,47 @@
+
+BEGIN; -- messenger_lex: Query returned successfully in 2 min 21 secs: 37061676 -->> 531031
+    SET parallel_setup_cost = 0;
+    SET parallel_tuple_cost = 0;
+    SET max_parallel_workers_per_gather = 12;
+    SET maintenance_work_mem = '256MB';
+    SET min_parallel_table_scan_size = 1;
+	WITH deleted_rows AS ( DELETE FROM public.messages WHERE created_at < 1739627918 RETURNING 0 ) SELECT count(*) FROM deleted_rows;
+COMMIT;
+
+VACUUM ANALYZE public.messages; -- messenger_lex: Query returned successfully in 2 min 51 secs.
+VACUUM FULL public.messages; -- messenger_starda: Query returned successfully in 10 min 53 secs. after VACUUM ANALYZE public.messages;
+-- ROLLBACK;
+
+
+-- Самые большие БД
+SELECT
+  datname AS database_name,
+  pg_database_size(datname) / 1073741824.0 AS size_gb
+FROM pg_database
+ORDER BY size_gb DESC;
+
+-- Самые большие таблицы в БД
+SELECT
+  schemaname,
+  relname AS table_name,
+  pg_total_relation_size(relid)/1073741824 AS Gb
+FROM pg_catalog.pg_statio_user_tables
+ORDER BY Gb DESC;
+
+--
+SELECT count(id), extract(epoch FROM now() - interval '90 days')::bigint FROM public.messages WHERE created_at < extract(epoch FROM now() - interval '90 days')::bigint;
+
+-- Соотношение размера таблицы к объектам таблицы
+SELECT
+    relname AS table_name,
+    pg_total_relation_size(relid)/1073741824.0 AS total_size_gb,
+    pg_relation_size(relid)/1073741824.0 AS table_size_gb,
+    pg_indexes_size(relid)/1073741824.0 AS indexes_size_gb,
+    (pg_total_relation_size(relid) - pg_relation_size(relid) - pg_indexes_size(relid))/1073741824.0 AS toast_size_gb
+FROM pg_catalog.pg_statio_user_tables
+ORDER BY total_size_gb DESC;
+
+
+
+
+Процент уменьшения = ((исходное_число - новое_число)/исходное_число)*100

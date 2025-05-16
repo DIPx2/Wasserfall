@@ -1,0 +1,17 @@
+WITH table_usage AS (
+    SELECT det_table_name, COUNT(*) AS usage_count
+    FROM robo_reindex."Details"
+    GROUP BY det_table_name
+    ORDER BY usage_count DESC
+    LIMIT 5
+),
+index_usage AS (
+    SELECT det_table_name, det_index_name, COUNT(*) AS index_usage_count, ROW_NUMBER() OVER (PARTITION BY det_table_name ORDER BY COUNT(*) DESC) AS rn
+    FROM robo_reindex."Details"
+    WHERE det_table_name IN (SELECT det_table_name FROM table_usage)
+    GROUP BY det_table_name, det_index_name
+)
+SELECT det_table_name, det_index_name, index_usage_count
+FROM index_usage
+WHERE rn <= 5
+ORDER BY det_table_name, index_usage_count DESC;

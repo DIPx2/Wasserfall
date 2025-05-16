@@ -13,30 +13,30 @@ DECLARE
     err_det              TEXT; -- Детали ошибки (PG_EXCEPTION_DETAIL)
     err_cd               TEXT; -- Код SQLSTATE ошибки
     log_synthesized_name TEXT; -- Имя лог-файла, определённое по дате (например, 'postgresql-Mon.log')
-    ts_current           TIMESTAMP WITH TIME ZONE := CURRENT_TIMESTAMP AT TIME ZONE 'UTC'; -- Текущее UTC-время
+    ts_current           TIMESTAMP WITH TIME ZONE = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'; -- Текущее UTC-время
     start_time           TIMESTAMP; -- Начальное время интервала логов (UTC)
     end_time             TIMESTAMP; -- Конечное время интервала логов (UTC)
 BEGIN
     IF (NOW() AT TIME ZONE 'UTC')::TIME BETWEEN TIME '00:00:00' AND TIME '00:10:00' THEN
-        log_synthesized_name := FORMAT('postgresql-%s.log',
+        log_synthesized_name = FORMAT('postgresql-%s.log',
                                        TO_CHAR((CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - INTERVAL '1 day')::DATE, 'Dy'));
-        start_time := TO_TIMESTAMP(
+        start_time = TO_TIMESTAMP(
                 TO_CHAR((CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - INTERVAL '1 day')::DATE + TIME '22:00:00',
                         'YYYY-MM-DD HH24:MI:SS'),
                 'YYYY-MM-DD HH24:MI:SS');
-        end_time := TO_TIMESTAMP(
+        end_time = TO_TIMESTAMP(
                 TO_CHAR((CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - INTERVAL '1 day')::DATE + TIME '23:59:59',
                         'YYYY-MM-DD HH24:MI:SS'),
                 'YYYY-MM-DD HH24:MI:SS');
     ELSE
-        log_synthesized_name := FORMAT('postgresql-%s.log',
+        log_synthesized_name = FORMAT('postgresql-%s.log',
                                        TO_CHAR((CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::DATE, 'Dy'));
     END IF;
 
     IF (ts_current - DATE_TRUNC('hour', ts_current) BETWEEN INTERVAL '-5 minutes' AND INTERVAL '5 minutes'
         OR start_time IS NULL) THEN
-        start_time := DATE_TRUNC('hour', ts_current) - INTERVAL '2 hours';
-        end_time := DATE_TRUNC('hour', ts_current);
+        start_time = DATE_TRUNC('hour', ts_current) - INTERVAL '2 hours';
+        end_time = DATE_TRUNC('hour', ts_current);
     END IF;
 
     CREATE TEMP TABLE tmp_info_table
@@ -107,7 +107,7 @@ BEGIN
                 RETURNING Pk_Id_Barn INTO id_barn_flag;
             END;
 
-            jsonb_departure := JSONB_BUILD_OBJECT(
+            jsonb_departure = JSONB_BUILD_OBJECT(
                     'pgbg_path', omega.pgbg_path,
                     'log_file', omega.out_file || log_synthesized_name,
                     'out_dir_slice', omega.out_dir,
@@ -148,7 +148,7 @@ BEGIN
                     RETURN;
             END;
 
-            time_start := EXTRACT(EPOCH FROM CLOCK_TIMESTAMP())::BIGINT;
+            time_start = EXTRACT(EPOCH FROM CLOCK_TIMESTAMP())::BIGINT;
 
             SELECT INTO jsonb_arrival result
             FROM Robohub.Public.Dblink(omega.conn_name,

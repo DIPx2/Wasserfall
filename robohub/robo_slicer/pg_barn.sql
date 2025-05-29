@@ -1,19 +1,16 @@
-CREATE TABLE Robo_Slicer.Pg_Barn
+CREATE TABLE robo_slicer.pg_barn
 (
-    Pk_Id_Barn        SERIAL,
-    Fk_Pk_Id_Conn     INTEGER                                             NOT NULL,
-    Ins_Date          BIGINT  DEFAULT (EXTRACT(EPOCH FROM NOW()))::BIGINT NOT NULL,
-    Log_Mod           BIGINT  DEFAULT 0                                   NOT NULL,
-    Log_Timer_Slicing BIGINT  DEFAULT 0                                   NOT NULL,
-    Log_Size          BIGINT  DEFAULT 0                                   NOT NULL,
-    Log_Slice_Size    INTEGER DEFAULT 0                                   NOT NULL,
-    Log_Name          TEXT    DEFAULT ';'::TEXT                           NOT NULL,
-    Log_Slice_Name    TEXT    DEFAULT 'nihil'::TEXT                       NOT NULL,
-    PRIMARY KEY (Pk_Id_Barn),
-    FOREIGN KEY (Fk_Pk_Id_Conn) REFERENCES Robo_Reference."Servers"
-        ON DELETE CASCADE
+    pk_id_barn        serial PRIMARY KEY,
+    fk_pk_id_conn     integer                                             NOT NULL REFERENCES robo_reference."Servers" ON DELETE CASCADE,
+    ins_date          bigint  DEFAULT (EXTRACT(EPOCH FROM NOW()))::bigint NOT NULL,
+    log_mod           bigint  DEFAULT 0                                   NOT NULL,
+    log_timer_slicing bigint  DEFAULT 0                                   NOT NULL,
+    log_size          bigint  DEFAULT 0                                   NOT NULL,
+    log_slice_size    integer DEFAULT 0                                   NOT NULL,
+    log_name          text    DEFAULT ';'::text                           NOT NULL,
+    log_slice_name    text    DEFAULT 'nihil'::text                       NOT NULL
 );
 
-ALTER TABLE Robo_Slicer.Pg_Barn
-    OWNER TO Gtimofeyev;
+ALTER TABLE robo_slicer.pg_barn
+    OWNER TO gtimofeyev;
 

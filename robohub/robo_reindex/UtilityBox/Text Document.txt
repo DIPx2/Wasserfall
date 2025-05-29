@@ -1,0 +1,3 @@
+postgres@prd-chat-pg-01:~$ crontab -l
+
+00 01 * * * /home/RegulatoryTasks/run_reindex.sh

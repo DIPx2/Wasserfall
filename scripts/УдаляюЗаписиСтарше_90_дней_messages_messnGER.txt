@@ -1,19 +1,213 @@
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO "igoy";
 
-BEGIN; -- messenger_lex: Query returned successfully in 2 min 21 secs: 37061676 -->> 531031
-    SET parallel_setup_cost = 0;
+266.895
+
+
+CREATE OR REPLACE FUNCTION remote_vacuum_messages()
+RETURNS void AS $$
+DECLARE
+
+db_list text[] = ARRAY[
+'messenger_lex',
+'messenger_irwin',
+'messenger_gizbo',
+'messenger_monro',
+'messenger_1go',
+'messenger_sol',
+'messenger_izzi',
+'messenger_fresh',
+'messenger_starda',
+'messenger_legzo',
+'messenger_jet',
+'messenger_rox',
+'messenger_drip',
+'messenger_flagman',
+'messenger_volna',
+'messenger_martin'
+  ];
+db text;
+
+BEGIN
+  FOREACH db IN ARRAY db_list
+  LOOP
+    PERFORM dblink_exec( 'host=prd-msg-pg-03.maxbit.private port=5432 dbname=' || db || ' user=robo_sudo password=%dFgH8!zX4&kLmT2', 'VACUUM FULL public.messages' );
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT  remote_vacuum_messages();
+
+
+
+-- max_worker_processes: Общее максимальное количество фоновых процессов, которые может запустить PostgreSQL, включая параллельные рабочие процессы, процессы автовакуума и т.д. Общее количество используемых параллельных воркеров (по всем Gather узлам всех запросов) не может превысить это значение (минус другие фоновые процессы).
+max_parallel_maintenance_workers: Максимальное количество параллельных рабочих процессов, которые могут быть запущены одной служебной командой (например, CREATE INDEX).
+parallel_setup_cost: Оценка планировщиком стоимости запуска параллельных процессов.
+parallel_tuple_cost: Оценка планировщиком стоимости передачи одной строки от рабочего процесса к лидеру.
+min_parallel_table_scan_size / min_parallel_index_scan_size: Минимальный размер таблицы/индекса, для которого планировщик будет рассматривать параллельное сканирование.
+force_parallel_mode: (Для отладки) Может заставить планировщик использовать параллельные планы, даже если он считает их невыгодными.
+
+*****************************************************************************************************************
+
+BEGIN;
+    -- Настройки для максимального параллелизма
+    SET local max_parallel_workers_per_gather = 24;
+    SET local parallel_setup_cost = 0;
+    SET local parallel_tuple_cost = 0;
+    SET local min_parallel_table_scan_size = 0;
+    
+    -- Настройки памяти
+    SET local maintenance_work_mem = '2GB';
+    SET local work_mem = '256MB';
+    
+    -- JIT для сложных вычислений
+    SET local jit = on;
+    SET local jit_above_cost = 10000;
+    
+    -- Пакетное удаление с замером времени
+    DO $$
+    DECLARE
+        batch_size INT := 100000000;
+        rows_deleted BIGINT := 1;
+        total_deleted BIGINT := 0;
+        cutoff_timestamp BIGINT;
+        start_time TIMESTAMP;
+        end_time TIMESTAMP;
+        elapsed INTERVAL;
+    BEGIN
+        -- Засекаем время начала
+        start_time := clock_timestamp();
+        
+        -- Рассчитываем timestamp для (текущая дата - 90 дней)
+        cutoff_timestamp := EXTRACT(EPOCH FROM (CURRENT_DATE - INTERVAL '90 days'))::BIGINT;
+        
+        RAISE NOTICE 'Начало удаления записей старше % (timestamp: %)', 
+            (CURRENT_DATE - INTERVAL '90 days')::DATE,
+            cutoff_timestamp;
+            
+        -- Основной цикл удаления
+        WHILE rows_deleted > 0 LOOP
+            WITH deleted AS (
+                DELETE FROM public.messages 
+                WHERE id IN (
+                    SELECT id FROM public.messages 
+                    WHERE created_at < cutoff_timestamp
+                    ORDER BY id
+                    LIMIT batch_size
+                )
+                RETURNING 1
+            )
+            SELECT COUNT(*) INTO rows_deleted FROM deleted;
+            
+            total_deleted := total_deleted + rows_deleted;
+            
+            -- Промежуточная статистика каждые 1M записей
+            IF total_deleted % 1000000 = 0 THEN
+                RAISE NOTICE 'Удалено %M строк (%.1f%%)', 
+                    total_deleted/1000000,
+                    (total_deleted::float / (SELECT COUNT(*) FROM public.messages WHERE created_at < cutoff_timestamp)) * 100;
+            END IF;
+        END LOOP;
+        
+        -- Засекаем время окончания
+        end_time := clock_timestamp();
+        elapsed := end_time - start_time;
+        
+        -- Итоговая статистика
+        RAISE NOTICE 'Удаление завершено: % строк за %', 
+            total_deleted, 
+            elapsed;
+            
+        RAISE NOTICE 'Средняя скорость: % строк/сек', 
+            (total_deleted / EXTRACT(EPOCH FROM elapsed))::INT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            RAISE EXCEPTION 'Ошибка при удалении: %', SQLERRM;
+    END $$;
+COMMIT;
+
+--ROLLBACK
+
+SELECT 
+    blocked_locks.pid AS blocked_pid,
+    blocked_activity.usename AS blocked_user,
+    blocking_locks.pid AS blocking_pid,
+    blocking_activity.usename AS blocking_user,
+    blocked_activity.query AS blocked_query,
+    blocking_activity.query AS blocking_query,
+    blocked_activity.application_name AS blocked_application,
+    blocking_activity.application_name AS blocking_application,
+    now() - blocked_activity.query_start AS blocked_duration,
+    now() - blocking_activity.query_start AS blocking_duration,
+    blocked_locks.mode AS blocked_mode,
+    blocking_locks.mode AS blocking_mode,
+    blocked_activity.state AS blocked_state,
+    blocking_activity.state AS blocking_state
+FROM 
+    pg_catalog.pg_locks blocked_locks
+JOIN 
+    pg_catalog.pg_stat_activity blocked_activity ON blocked_activity.pid = blocked_locks.pid
+JOIN 
+    pg_catalog.pg_locks blocking_locks ON blocking_locks.locktype = blocked_locks.locktype
+    AND blocking_locks.DATABASE IS NOT DISTINCT FROM blocked_locks.DATABASE
+    AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation
+    AND blocking_locks.page IS NOT DISTINCT FROM blocked_locks.page
+    AND blocking_locks.tuple IS NOT DISTINCT FROM blocked_locks.tuple
+    AND blocking_locks.virtualxid IS NOT DISTINCT FROM blocked_locks.virtualxid
+    AND blocking_locks.transactionid IS NOT DISTINCT FROM blocked_locks.transactionid
+    AND blocking_locks.classid IS NOT DISTINCT FROM blocked_locks.classid
+    AND blocking_locks.objid IS NOT DISTINCT FROM blocked_locks.objid
+    AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid
+    AND blocking_locks.pid != blocked_locks.pid
+JOIN 
+    pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid
+WHERE 
+    NOT blocked_locks.GRANTED;
+
+SELECT 
+    leader_pid AS parent_pid,
+    pid AS worker_pid,
+    query,
+    state,
+    backend_start,
+    now() - query_start AS duration,
+    application_name
+FROM 
+    pg_stat_activity
+WHERE 
+    leader_pid IS NOT NULL
+ORDER BY 
+    leader_pid, pid;
+
+
+-----------------
+CREATE INDEX CONCURRENTLY tmp_del_idx ON messages(created_at) 
+WHERE created_at < 1739998800;
+-----------------
+SET lock_timeout = '5s';
+SET statement_timeout = '6h';
+-----------------
+
+VACUUM ANALYZE public.messages;
+
+*****************************************************************************************************************
+
+-- messenger_lex: Query returned successfully in 2 min 21 secs: 37061676 -->> 531031
+-- messenger_starda: Query returned successfully in 13 secs 127 msec: 3969629 -->> 531031
+BEGIN; 
+    SET parallel_setup_cost = 0; 
     SET parallel_tuple_cost = 0;
-    SET max_parallel_workers_per_gather = 12;
+    SET max_parallel_workers_per_gather = 6;
     SET maintenance_work_mem = '256MB';
     SET min_parallel_table_scan_size = 1;
-	WITH deleted_rows AS ( DELETE FROM public.messages WHERE created_at < 1739627918 RETURNING 0 ) SELECT count(*) FROM deleted_rows;
+	
+	WITH deleted_rows AS ( DELETE FROM public.messages WHERE created_at < 1739998800 RETURNING 0 ) SELECT count(*) FROM deleted_rows;
 COMMIT;
 
 VACUUM ANALYZE public.messages; -- messenger_lex: Query returned successfully in 2 min 51 secs.
 VACUUM FULL public.messages; -- messenger_starda: Query returned successfully in 10 min 53 secs. after VACUUM ANALYZE public.messages;
 -- ROLLBACK;
 
-
--- Самые большие БД
+-- Самые большие БД -- 25.9361350862309337 -- messenger_starda
 SELECT
   datname AS database_name,
   pg_database_size(datname) / 1073741824.0 AS size_gb
@@ -28,6 +222,24 @@ SELECT
 FROM pg_catalog.pg_statio_user_tables
 ORDER BY Gb DESC;
 
+
+SELECT
+  datname AS database_name,
+  ROUND(pg_database_size(datname)::numeric / (1024.0 * 1024.0), 2) AS size_mb
+FROM pg_database
+ORDER BY size_mb DESC;
+
+
+SELECT
+  schemaname,
+  relname AS table_name,
+  ROUND(pg_total_relation_size(relid)::numeric / (1024.0 * 1024.0), 2) AS Mb
+FROM pg_catalog.pg_statio_user_tables
+ORDER BY Mb DESC;
+
+
+
+
 --
 SELECT count(id), extract(epoch FROM now() - interval '90 days')::bigint FROM public.messages WHERE created_at < extract(epoch FROM now() - interval '90 days')::bigint;
 
@@ -41,7 +253,31 @@ SELECT
 FROM pg_catalog.pg_statio_user_tables
 ORDER BY total_size_gb DESC;
 
+18619056128 / 1073741824 ≈ 17.338 ГБ
 
+SELECT
+  '\c '|| datname AS database_name,
+  pg_database_size(datname) / 1073741824.0 AS size_gb
+FROM pg_database
+ORDER BY size_gb DESC;
+
+
+SELECT
+  schemaname,
+  relname AS table_name,
+  ROUND(pg_total_relation_size(relid)::numeric / (1024.0 * 1024.0), 2) AS Mb
+FROM pg_catalog.pg_statio_user_tables
+ORDER BY Mb DESC;
+
+
+SELECT
+    relname AS table_name,
+    ROUND(pg_total_relation_size(relid)/1073741824.0, 2) AS total_size_gb,
+    ROUND(pg_relation_size(relid)/1073741824.0, 2) AS table_size_gb,
+    ROUND(pg_indexes_size(relid)/1073741824.0, 2) AS indexes_size_gb,
+    ROUND((pg_total_relation_size(relid) - pg_relation_size(relid) - pg_indexes_size(relid)) / 1073741824.0, 2) AS toast_size_gb
+FROM pg_catalog.pg_statio_user_tables
+ORDER BY total_size_gb DESC;
 
 
 Процент уменьшения = ((исходное_число - новое_число)/исходное_число)*100

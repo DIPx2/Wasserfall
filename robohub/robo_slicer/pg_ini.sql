@@ -1,17 +1,9 @@
-CREATE TABLE Robo_Slicer.Pg_Ini
+CREATE TABLE robo_slicer.pg_ini
 (
-    Pk_Id_Pgini       SERIAL,
-    Fk_Pk_Id_Conn     INTEGER NOT NULL,
-    Path_Pgbg         TEXT    NOT NULL,
-    Path_Out_Dir      TEXT    NOT NULL,
-    Path_Out_Log_File TEXT    NOT NULL,
-    PRIMARY KEY (Pk_Id_Pgini),
-    FOREIGN KEY (Fk_Pk_Id_Conn) REFERENCES Robo_Reference."Servers"
-        ON DELETE CASCADE
-);
+    pk_id_pgini serial PRIMARY KEY, fk_pk_id_conn integer NOT NULL REFERENCES robo_reference."Servers" ON DELETE CASCADE, path_pgbg text NOT NULL, path_out_dir text NOT NULL, path_out_log_file text NOT NULL);
 
-COMMENT ON TABLE Robo_Slicer.Pg_Ini IS 'Родитель - Reference."Servers"';
+COMMENT ON TABLE robo_slicer.pg_ini IS 'Родитель - Reference."Servers"';
 
-ALTER TABLE Robo_Slicer.Pg_Ini
-    OWNER TO Gtimofeyev;
+ALTER TABLE robo_slicer.pg_ini
+    OWNER TO gtimofeyev;
 

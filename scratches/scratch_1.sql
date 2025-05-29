@@ -1,10 +1,3 @@
-
--- To use the the database robohub and the scheme reindex
-
-Сразу готовность к реиндексации: B'10000000'
-
-INSERT INTO robo_reference."Servers" (Pk_Id_Conn, Conn_Port, Conn_Host, switch_serv) VALUES (DEFAULT, 5432, 'prd-msg-pg-03.maxbit.private', B'10000000');
-
 INSERT INTO robo_reference."DataBases" (Pk_Id_Db, Fk_Pk_Id_Conn, Db_Scheme, Db_Name, switch_db) VALUES (DEFAULT, 9, DEFAULT, 'messenger_volna', B'10000000');
 INSERT INTO robo_reference."DataBases" (Pk_Id_Db, Fk_Pk_Id_Conn, Db_Scheme, Db_Name, switch_db) VALUES (DEFAULT, 9, DEFAULT, 'messenger_starda', B'10000000');
 INSERT INTO robo_reference."DataBases" (Pk_Id_Db, Fk_Pk_Id_Conn, Db_Scheme, Db_Name, switch_db) VALUES (DEFAULT, 9, DEFAULT, 'messenger_sol', B'10000000');

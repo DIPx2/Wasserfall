@@ -1,17 +1,14 @@
-CREATE TABLE Robo_Slicer."Errors"
+CREATE TABLE robo_slicer."Errors"
 (
-    Pk_Id_Slice_Err  INTEGER GENERATED ALWAYS AS IDENTITY,
-    Fk_Pk_Id_Conn    INTEGER                                    NOT NULL,
-    Slice_Now_Ins    TIMESTAMP WITH TIME ZONE DEFAULT NOW()     NOT NULL,
-    Slice_Err_Mess   TEXT                     DEFAULT ';'::TEXT NOT NULL,
-    Slice_Err_Detail TEXT                     DEFAULT ';'::TEXT NOT NULL,
-    Slice_Err_Code   TEXT                     DEFAULT ';'::TEXT NOT NULL,
-    Work_Scheme      TEXT                     DEFAULT ';'::TEXT NOT NULL,
-    PRIMARY KEY (Pk_Id_Slice_Err),
-    FOREIGN KEY (Fk_Pk_Id_Conn) REFERENCES Robo_Reference."Servers"
-        ON DELETE CASCADE
+    pk_id_slice_err  integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fk_pk_id_conn    integer                                    NOT NULL REFERENCES robo_reference."Servers" ON DELETE CASCADE,
+    slice_now_ins    timestamp with time zone DEFAULT NOW()     NOT NULL,
+    slice_err_mess   text                     DEFAULT ';'::text NOT NULL,
+    slice_err_detail text                     DEFAULT ';'::text NOT NULL,
+    slice_err_code   text                     DEFAULT ';'::text NOT NULL,
+    work_scheme      text                     DEFAULT ';'::text NOT NULL
 );
 
-ALTER TABLE Robo_Slicer."Errors"
-    OWNER TO Gtimofeyev;
+ALTER TABLE robo_slicer."Errors"
+    OWNER TO gtimofeyev;
 

@@ -1,1 +1,0 @@
-mklink /D "C:\Users\g.timofeyev\AppData\Roaming\JetBrains\DataGrip2025.1\scratches" "C:\Users\g.timofeyev\Documents\ROBOS\Wasserfall\scratches"
